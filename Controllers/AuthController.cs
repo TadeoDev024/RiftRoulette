@@ -36,7 +36,7 @@ public class AuthController : ControllerBase
             string query = "INSERT INTO Usuarios (username, password) VALUES (@user, @pass); SELECT LAST_INSERT_ID();";
             using var cmd = new MySqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@user", req.Username);
-            cmd.Parameters.AddWithValue("@pass", req.Password); // Nota: En un proyecto real esto iría encriptado (Hash)
+            cmd.Parameters.AddWithValue("@pass", req.Password); 
             
             int userId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             
@@ -52,6 +52,7 @@ public class AuthController : ControllerBase
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
+            // Buscar el usuario en la base de datos
             string query = "SELECT id_usuario FROM Usuarios WHERE username = @user AND password = @pass";
             using var cmd = new MySqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@user", req.Username);

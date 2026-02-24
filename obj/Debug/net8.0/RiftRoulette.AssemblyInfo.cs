@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RiftRoulette")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4370d67f2c8034a73fb0032c38d0e4255813a66b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+03e9be079cbb67e8f0883bfeabdb7550bd9c2ee4")]
 [assembly: System.Reflection.AssemblyProductAttribute("RiftRoulette")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RiftRoulette")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

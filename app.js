@@ -100,16 +100,16 @@ function renderInventory(skins) {
                     // FIX DE IMÁGENES: Usamos el s.campeon real y una fórmula exacta para el ID
                     const champName = s.campeon ? s.campeon.replace(/\s/g, '') : "Unknown";
                     const skinIndex = parseInt(s.id) % 1000; 
-                    const imgUrl = \`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/\${champName}_\${skinIndex}.jpg\`;
+                    const imgUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champName}_${skinIndex}.jpg`;
 
-                    return \`
-                        <div class="skin-card \${s.owned ? 'owned' : ''}" onclick="toggleSkin('\${s.id}', this)">
+                    return `
+                        <div class="skin-card ${s.owned ? 'owned' : ''}" onclick="toggleSkin('${s.id}', this)">
                             <div class="skin-img-wrapper">
-                                <img src="\${imgUrl}" onerror="this.src='https://via.placeholder.com/300x170/121214/FFFFFF?text=\${encodeURIComponent(s.nombre)}'">
+                                <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/300x170/121214/FFFFFF?text=${encodeURIComponent(s.nombre)}'">
                             </div>
-                            <div class="skin-name">\${s.nombre}</div>
+                            <div class="skin-name">${s.nombre}</div>
                         </div>
-                    \`;
+                    `;
                 }).join('')}
             </div>
         </div>

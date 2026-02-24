@@ -33,6 +33,8 @@ public class RiotDataService {
             var champsRaw = await client.GetStringAsync($"https://ddragon.leagueoflegends.com/cdn/{latestVersion}/data/es_ES/champion.json");
             var champions = JObject.Parse(champsRaw)["data"];
 
+            if (champions == null) return;
+
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
