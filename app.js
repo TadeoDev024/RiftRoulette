@@ -1,4 +1,4 @@
-const API_URL = "https://tu-proyecto-railway.up.railway.app/api"; // URL generada en Railway
+const API_URL = "https://riftroulette-production.up.railway.app/"; // URL generada en Railway
 
 let currentLobbyCode = "";
 let currentUser = JSON.parse(localStorage.getItem('user')) || null;
