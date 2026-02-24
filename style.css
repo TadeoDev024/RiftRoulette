@@ -10,7 +10,37 @@
     gap: 1.5rem;
     margin: 2rem 0;
 }
+.auth-card, .home-card {
+    background: var(--card-bg);
+    padding: 3rem;
+    border-radius: 20px;
+    max-width: 400px;
+    margin: 10vh auto;
+    text-align: center;
+    border: 1px solid #333;
+}
 
+.auth-inputs input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    background: #000;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 8px;
+}
+
+.btn-main.large {
+    padding: 1.5rem 3rem;
+    font-size: 1.2rem;
+    margin-top: 2rem;
+}
+
+.themes-grid {
+    display: grid;
+    gap: 2rem;
+    margin-top: 2rem;
+}
 .player-slot {
     background: #1a1a1e;
     border: 1px solid #333;
@@ -53,3 +83,20 @@
 }
 
 .notification.show { top: 20px; }
+/* Por defecto, todas las vistas están ocultas */
+.view {
+    display: none; 
+    min-height: 80vh;
+    padding-top: 2rem;
+}
+
+/* Solo la vista activa se muestra */
+.view.active {
+    display: block;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -3,28 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RiftRoulette | Premium</title>
+    <title>RiftRoulette | Premium Edition</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="notification" class="notification">¡Copiado al portapapeles!</div>
+
+    <nav class="navbar" id="main-nav" style="display: none;">
+        <div class="nav-logo" onclick="showView('view-home')">RIFT<span>ROULETTE</span></div>
+        <ul class="nav-links">
+            <li><a href="#" onclick="showView('view-home')">Inicio</a></li>
+            <li><a href="#" onclick="showView('view-inventory')">Mis Skins</a></li>
+            <li class="profile-dropdown">
+                <button class="profile-btn">Perfil ▼</button>
+                <div class="dropdown-content">
+                    <a href="#" onclick="logout()">Cerrar Sesión</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <section id="view-auth" class="view container active">
+        <div class="auth-card">
+            <h2 id="auth-title">Bienvenido</h2>
+            <div class="auth-inputs">
+                <input type="text" id="auth-user" placeholder="Usuario">
+                <input type="password" id="auth-pass" placeholder="Contraseña">
+                <button class="btn-main" onclick="handleAuth()">Ingresar</button>
+            </div>
+            <p onclick="toggleAuthMode()" id="auth-switch">¿No tienes cuenta? Regístrate</p>
+        </div>
+    </section>
+
+    <section id="view-home" class="view container">
+        <div class="home-card">
+            <h1>¿Listo para la partida?</h1>
+            <p>Crea una sala e invita a tus amigos para decidir qué temática jugarán.</p>
+            <button class="btn-main large" onclick="createNewLobby()">CREAR NUEVA SALA</button>
+        </div>
+    </section>
+
+    <section id="view-inventory" class="view container">
+        <div class="inventory-header">
+            <h2>Mi Colección</h2>
+            <p>Marca las skins que posees en tu cuenta para que la ruleta pueda calcular las coincidencias.</p>
+        </div>
+        <div id="themes-container" class="themes-grid">
+            </div>
+    </section>
 
     <section id="view-lobby" class="view container">
         <div class="lobby-card">
             <div class="header-row">
                 <h2>SALA: <span id="display-code" class="accent">#-----</span></h2>
-                <button class="btn-secondary" onclick="copyInviteLink()">Invitar Amigos</button>
+                <button class="btn-secondary" onclick="copyInviteLink()">Copiar Invitación</button>
             </div>
-
-            <div id="player-grid" class="player-grid">
-                </div>
-
+            <div id="player-grid" class="player-grid"></div>
             <div class="roulette-wrapper">
                 <div id="wheel" class="wheel">?</div>
                 <button id="spin-btn" class="btn-main" onclick="triggerRoulette()">GIRAR RULETA</button>
             </div>
-            
             <div id="result-display" class="result-display"></div>
         </div>
     </section>

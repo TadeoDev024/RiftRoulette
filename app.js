@@ -1,11 +1,30 @@
 // Configuración de la URL de producción (Railway)
+let isLoginMode = true;
 const API_URL = "https://riftroulette-production.up.railway.app/api";
 
 // Variables de estado global
 let currentLobbyCode = "";
 // Usuario de prueba si no hay uno logueado
 let currentUser = JSON.parse(localStorage.getItem('user')) || { userId: 1, username: "admin" };
+function showView(viewId) {
+    // 1. Ocultamos todas las secciones que tengan la clase 'view'
+    document.querySelectorAll('.view').forEach(v => {
+        v.classList.remove('active');
+        v.style.display = 'none';
+    });
 
+    // 2. Mostramos solo la sección que el usuario pidió
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.add('active');
+        targetView.style.display = 'block';
+    }
+
+    // 3. Lógica especial: Si va al inventario, cargamos los datos automáticamente
+    if (viewId === 'view-inventory') {
+        loadInventory();
+    }
+}
 /**
  * GESTIÓN DE INVENTARIO
  */
@@ -70,6 +89,20 @@ async function toggleSkin(skinId, element) {
 /**
  * GESTIÓN DE LOBBY Y RULETA
  */
+async function createNewLobby() {
+    try {
+        const response = await fetch(`${API_URL}/Lobby/create`, { 
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${currentUser.token}` } // Si usas JWT
+        });
+        const data = await response.json();
+        currentLobbyCode = data.lobbyCode;
+        document.getElementById('display-code').innerText = `#${currentLobbyCode}`;
+        showView('view-lobby');
+    } catch (e) {
+        alert("Error al crear la sala");
+    }
+}
 function copyInviteLink() {
     // CORRECCIÓN: window.location (en minúsculas) para evitar errores
     const url = `${window.location.origin}?join=${currentLobbyCode}`;
@@ -124,14 +157,43 @@ async function triggerRoulette() {
 /**
  * INICIALIZACIÓN
  */
-document.addEventListener('DOMContentLoaded', () => {
-    loadInventory();
+function showView(viewId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    
+    // Solo mostrar Navbar si no estamos en login
+    document.getElementById('main-nav').style.display = viewId === 'view-auth' ? 'none' : 'flex';
 
-    const params = new URLSearchParams(window.location.search);
-    const joinCode = params.get('join');
-    if (joinCode) {
-        currentLobbyCode = joinCode;
-        const displayCode = document.getElementById('display-code');
-        if (displayCode) displayCode.innerText = `#${joinCode}`;
+    if(viewId === 'view-inventory') loadInventory();
+}
+
+async function handleAuth() {
+    const user = document.getElementById('auth-user').value;
+    const pass = document.getElementById('auth-pass').value;
+
+    // Conexión real con tu AuthController.cs
+    try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Username: user, Password: pass })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('user', JSON.stringify(data));
+            currentUser = data;
+            showView('view-home');
+        } else {
+            alert("Credenciales incorrectas");
+        }
+    } catch (e) {
+        alert("Error de conexión con el servidor");
     }
-});
+}
+
+function logout() {
+    localStorage.clear();
+    location.reload();
+}
+
