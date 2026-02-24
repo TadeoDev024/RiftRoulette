@@ -1,48 +1,46 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using RiftRoulette.Models; // Esto vincula el archivo que creamos arriba
-using MySql.Data.MySqlClient; // CRÍTICO: Para MySqlConnection y MySqlCommand
+using MySql.Data.MySqlClient;
+using RiftRoulette.Models;
+
 [ApiController]
 [Route("api/[controller]")]
 public class RiftController : ControllerBase
 {
-    private string connectionString = "Server=localhost;Database=RiftRoulette;Uid=root;Pwd=TU_CONTRASEÑA;";
+    private readonly string _connectionString;
 
-    [HttpPost("login")]
-    public IActionResult Login([FromBody] dynamic data)
+    public RiftController(IConfiguration configuration)
     {
-        string user = data.GetProperty("username").GetString();
-        // Nota: En producción usa BCrypt para comparar hashes
-        using var conn = new MySqlConnection(connectionString);
-        conn.Open();
-        var cmd = new MySqlCommand("SELECT id_usuario FROM Usuarios WHERE username = @u", conn);
-        cmd.Parameters.AddWithValue("@u", user);
-        var id = cmd.ExecuteScalar();
-        
-        if (id != null) return Ok(new { userId = id });
-        return Unauthorized();
+        // Lee la conexión configurada para Railway
+        _connectionString = configuration.GetConnectionString("DefaultConnection");
+    }
+
+    [HttpGet("sync-data")]
+    public async Task<IActionResult> Sync()
+    {
+        var service = new RiotDataService(); // Asegúrate de que el método sea público en dataimporter.cs
+        await service.SyncRiotData();
+        return Ok("Sincronización con Riot completada.");
     }
 
     [HttpGet("skins/{userId}")]
     public IActionResult GetSkins(int userId)
     {
         var list = new List<object>();
-        using var conn = new MySqlConnection(connectionString);
+        using var conn = new MySqlConnection(_connectionString);
         conn.Open();
-        // Trae todas las skins e indica si el usuario las tiene (LEFT JOIN)
         string query = @"
-            SELECT s.id_skin, s.nombre_skin, t.nombre as tematica, 
+            SELECT s.id_skin_riot, s.nombre_skin, t.nombre as tematica, 
             IF(us.id_usuario IS NULL, 0, 1) as poseida
             FROM Skins s
             JOIN Tematicas t ON s.id_tematica = t.id_tematica
-            LEFT JOIN Usuario_Skins us ON s.id_skin = us.id_skin AND us.id_usuario = @uid";
+            LEFT JOIN Usuario_Skins us ON s.id_skin_riot = us.id_skin_riot AND us.id_usuario = @uid";
         
-        var cmd = new MySqlCommand(query, conn);
+        using var cmd = new MySqlCommand(query, conn);
         cmd.Parameters.AddWithValue("@uid", userId);
         using var reader = cmd.ExecuteReader();
         while (reader.Read()) {
             list.Add(new { 
-                id = reader["id_skin"], 
+                id = reader["id_skin_riot"], 
                 nombre = reader["nombre_skin"], 
                 tema = reader["tematica"],
                 owned = reader.GetBoolean("poseida")
@@ -55,19 +53,26 @@ public class RiftController : ControllerBase
     public IActionResult ToggleSkin([FromBody] dynamic data)
     {
         int uid = data.GetProperty("userId").GetInt32();
-        int sid = data.GetProperty("skinId").GetInt32();
+        long sid = data.GetProperty("skinId").GetInt64();
         bool owned = data.GetProperty("owned").GetBoolean();
 
-        using var conn = new MySqlConnection(connectionString);
+        using var conn = new MySqlConnection(_connectionString);
         conn.Open();
         string query = owned 
-            ? "INSERT IGNORE INTO Usuario_Skins VALUES (@uid, @sid)" 
-            : "DELETE FROM Usuario_Skins WHERE id_usuario = @uid AND id_skin = @sid";
+            ? "INSERT IGNORE INTO Usuario_Skins (id_usuario, id_skin_riot) VALUES (@uid, @sid)" 
+            : "DELETE FROM Usuario_Skins WHERE id_usuario = @uid AND id_skin_riot = @sid";
         
-        var cmd = new MySqlCommand(query, conn);
+        using var cmd = new MySqlCommand(query, conn);
         cmd.Parameters.AddWithValue("@uid", uid);
         cmd.Parameters.AddWithValue("@sid", sid);
         cmd.ExecuteNonQuery();
         return Ok();
     }
+    [HttpGet("sync-data")]
+public async Task<IActionResult> Sync()
+{
+    var service = new RiotDataService();
+    await service.SyncRiotData(); // Esto poblará las tablas Tematicas, Campeones y Skins
+    return Ok(new { message = "Sincronización completada exitosamente" });
+}
 }

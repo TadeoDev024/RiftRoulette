@@ -7,9 +7,28 @@ namespace RiftRoulette.Logic {
     public class RouletteService {
         
         // MÉTODOS QUE FALTABAN PARA QUE EL BUILD NO DE ERROR
-        private List<dynamic> GetThemesSharedByAll(List<int> userIds) {
-            return new List<dynamic>(); // Temporalmente vacío
-        }
+       private List<dynamic> GetThemesSharedByAll(List<int> userIds) {
+    using var conn = new MySqlConnection(_connectionString);
+    conn.Open();
+    // Condición A: Temáticas que poseen TODOS los N jugadores
+    string query = @"
+        SELECT t.id_tematica, t.nombre 
+        FROM Usuario_Skins us
+        JOIN Skins s ON us.id_skin_riot = s.id_skin_riot
+        JOIN Tematicas t ON s.id_tematica = t.id_tematica
+        WHERE us.id_usuario IN (" + string.Join(",", userIds) + @")
+        GROUP BY t.id_tematica
+        HAVING COUNT(DISTINCT us.id_usuario) = @playerCount";
+
+    var themes = new List<dynamic>();
+    using var cmd = new MySqlCommand(query, conn);
+    cmd.Parameters.AddWithValue("@playerCount", userIds.Count);
+    using var reader = cmd.ExecuteReader();
+    while (reader.Read()) {
+        themes.Add(new { Id = reader.GetInt32(0), Nombre = reader.GetString(1) });
+    }
+    return themes;
+}
 
         private List<SkinDTO> GetUserSkinsInTheme(int userId, int themeId) {
             return new List<SkinDTO>(); // Temporalmente vacío
