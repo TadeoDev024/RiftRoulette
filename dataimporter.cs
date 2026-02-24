@@ -23,7 +23,7 @@ public class RiotDataService {
             foreach (var skin in skinData) {
                 // Aquí extraemos o asignamos la temática (Nota: Riot no da la temática en el JSON básico, 
                 // pero puedes mapearla por palabras clave o usar un diccionario manual de temáticas populares)
-                await SaveSkinToDb(champProp.First, skin, champId);
+                // await SaveSkinToDb(champProp.First, skin, champId);
             }
         }
     }
