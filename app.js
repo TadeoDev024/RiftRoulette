@@ -1,30 +1,88 @@
-// Configuración de la URL de producción (Railway)
-let isLoginMode = true;
+/**
+ * CONFIGURACIÓN Y ESTADO GLOBAL
+ */
 const API_URL = "https://riftroulette-production.up.railway.app/api";
-
-// Variables de estado global
+let isLoginMode = true;
 let currentLobbyCode = "";
-// Usuario de prueba si no hay uno logueado
-let currentUser = JSON.parse(localStorage.getItem('user')) || { userId: 1, username: "admin" };
+// Intentamos cargar el usuario del localStorage, si no, lo dejamos como null para forzar login
+let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+
+/**
+ * SISTEMA DE NAVEGACIÓN (SPA)
+ */
 function showView(viewId) {
-    // 1. Ocultamos todas las secciones que tengan la clase 'view'
+    // 1. Ocultamos todas las secciones
     document.querySelectorAll('.view').forEach(v => {
         v.classList.remove('active');
         v.style.display = 'none';
     });
 
-    // 2. Mostramos solo la sección que el usuario pidió
+    // 2. Mostramos la sección solicitada
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.add('active');
         targetView.style.display = 'block';
     }
 
-    // 3. Lógica especial: Si va al inventario, cargamos los datos automáticamente
-    if (viewId === 'view-inventory') {
+    // 3. Control del Navbar: Solo visible si el usuario está logueado y no está en la vista de Auth
+    const mainNav = document.getElementById('main-nav');
+    if (mainNav) {
+        mainNav.style.display = (viewId === 'view-auth' || !currentUser) ? 'none' : 'flex';
+    }
+
+    // 4. Carga automática de datos según la vista
+    if (viewId === 'view-inventory' && currentUser) {
         loadInventory();
     }
 }
+
+/**
+ * GESTIÓN DE AUTENTICACIÓN
+ */
+function toggleAuthMode() {
+    isLoginMode = !isLoginMode;
+    document.getElementById('auth-title').innerText = isLoginMode ? "Bienvenido" : "Crear Cuenta";
+    document.getElementById('auth-switch').innerText = isLoginMode ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Ingresa";
+}
+
+async function handleAuth() {
+    const user = document.getElementById('auth-user').value;
+    const pass = document.getElementById('auth-pass').value;
+
+    if (!user || !pass) {
+        alert("Por favor completa todos los campos");
+        return;
+    }
+
+    const endpoint = isLoginMode ? "Auth/login" : "Auth/register";
+
+    try {
+        const response = await fetch(`${API_URL}/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Username: user, Password: pass })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('user', JSON.stringify(data));
+            currentUser = data;
+            showView('view-home');
+        } else {
+            const errorMsg = await response.text();
+            alert("Error: " + (errorMsg || "Credenciales inválidas"));
+        }
+    } catch (e) {
+        console.error("Error de Auth:", e);
+        alert("Error de conexión con el servidor de Railway.");
+    }
+}
+
+function logout() {
+    localStorage.clear();
+    location.reload();
+}
+
 /**
  * GESTIÓN DE INVENTARIO
  */
@@ -37,7 +95,7 @@ async function loadInventory() {
     } catch (error) {
         console.error("Error cargando inventario:", error);
         const container = document.getElementById('themes-container');
-        if (container) container.innerHTML = "<p>Error al conectar con la API. Verifica que las tablas existan en la DB.</p>";
+        if (container) container.innerHTML = "<p>Error al cargar skins. Revisa la consola.</p>";
     }
 }
 
@@ -45,6 +103,7 @@ function renderInventory(skins) {
     const container = document.getElementById('themes-container');
     if (!container) return;
 
+    // Agrupamos por tema
     const grouped = skins.reduce((acc, skin) => {
         if (!acc[skin.tema]) acc[skin.tema] = [];
         acc[skin.tema].push(skin);
@@ -55,13 +114,21 @@ function renderInventory(skins) {
         <div class="theme-group">
             <h3 class="theme-title">${tema}</h3>
             <div class="skins-row">
-                ${grouped[tema].map(s => `
-                    <div class="skin-card ${s.owned ? 'owned' : ''}" onclick="toggleSkin('${s.id}', this)">
-                        <img src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${s.nombre.replace(/\s/g, '')}_0.jpg" 
-                             onerror="this.src='https://via.placeholder.com/150x80?text=Skin'">
-                        <span>${s.nombre}</span>
-                    </div>
-                `).join('')}
+                ${grouped[tema].map(s => {
+                    // Generación de URL correcta: ChampionName_SkinIndex.jpg
+                    const champName = s.nombre.split(' ')[0]; 
+                    const skinIndex = s.id.slice(-2); // Los últimos 2 dígitos suelen ser el índice
+                    const imgUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champName}_${parseInt(skinIndex)}.jpg`;
+
+                    return `
+                        <div class="skin-card ${s.owned ? 'owned' : ''}" onclick="toggleSkin('${s.id}', this)">
+                            <div class="skin-img-wrapper">
+                                <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/300x170/121214/FFFFFF?text=${s.nombre}'">
+                            </div>
+                            <div class="skin-name">${s.nombre}</div>
+                        </div>
+                    `;
+                }).join('')}
             </div>
         </div>
     `).join('');
@@ -93,7 +160,10 @@ async function createNewLobby() {
     try {
         const response = await fetch(`${API_URL}/Lobby/create`, { 
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${currentUser.token}` } // Si usas JWT
+            headers: { 
+                'Authorization': `Bearer ${currentUser.token}`,
+                'Content-Type': 'application/json'
+            }
         });
         const data = await response.json();
         currentLobbyCode = data.lobbyCode;
@@ -103,11 +173,10 @@ async function createNewLobby() {
         alert("Error al crear la sala");
     }
 }
+
 function copyInviteLink() {
-    // CORRECCIÓN: window.location (en minúsculas) para evitar errores
     const url = `${window.location.origin}?join=${currentLobbyCode}`;
     navigator.clipboard.writeText(url);
-    
     const note = document.getElementById('notification');
     if (note) {
         note.classList.add('show');
@@ -120,31 +189,25 @@ async function triggerRoulette() {
     const wheel = document.getElementById('wheel');
     const resultDiv = document.getElementById('result-display');
 
-    if (!currentLobbyCode) {
-        alert("Debes estar en una sala activa");
-        return;
-    }
+    if (!currentLobbyCode) return alert("Debes estar en una sala activa");
 
     btn.disabled = true;
+    wheel.style.transition = "transform 4s cubic-bezier(0.15, 0, 0.15, 1)";
     wheel.style.transform = `rotate(${3600 + Math.random() * 360}deg)`;
 
     try {
         const response = await fetch(`${API_URL}/roulette/spin/${currentLobbyCode}`);
-        if (!response.ok) throw new Error("No se encontró temática válida para este grupo.");
+        if (!response.ok) throw new Error("No hay temáticas compartidas.");
         
         const data = await response.json();
 
         setTimeout(() => {
             wheel.innerText = data.tematica;
-            wheel.style.transform = "rotate(0deg)";
-            wheel.style.transition = "none";
-            
             resultDiv.innerHTML = data.assignments.map(a => `
                 <div class="assign-card">
-                    <strong>Usuario ID ${a.userId}</strong>: ${a.skinName}
+                    <strong>${a.username || 'Jugador'}:</strong> ${a.skinName}
                 </div>
             `).join('');
-            
             btn.disabled = false;
         }, 4000);
     } catch (e) {
@@ -155,56 +218,23 @@ async function triggerRoulette() {
 }
 
 /**
- * INICIALIZACIÓN
+ * INICIALIZACIÓN AL CARGAR
  */
-function showView(viewId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
-    
-    // Solo mostrar Navbar si no estamos en login
-    document.getElementById('main-nav').style.display = viewId === 'view-auth' ? 'none' : 'flex';
-
-    if(viewId === 'view-inventory') loadInventory();
-}
-
-// Cambia entre modo Login y Registro visualmente
-function toggleAuthMode() {
-    isLoginMode = !isLoginMode;
-    document.getElementById('auth-title').innerText = isLoginMode ? "Bienvenido" : "Crear Cuenta";
-    document.getElementById('auth-switch').innerText = isLoginMode ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Ingresa";
-}
-
-async function handleAuth() {
-    const user = document.getElementById('auth-user').value;
-    const pass = document.getElementById('auth-pass').value;
-    
-    // Determinamos a qué endpoint llamar según el modo
-    const endpoint = isLoginMode ? "Auth/login" : "Auth/register";
-
-    try {
-        const response = await fetch(`${API_URL}/${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ Username: user, Password: pass })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('user', JSON.stringify(data));
-            currentUser = data;
-            showView('view-home');
+document.addEventListener('DOMContentLoaded', () => {
+    // Si no hay usuario, mandamos a la vista de Auth
+    if (!currentUser) {
+        showView('view-auth');
+    } else {
+        // Si ya hay usuario, verificamos si viene de un link de invitación
+        const params = new URLSearchParams(window.location.search);
+        const joinCode = params.get('join');
+        
+        if (joinCode) {
+            currentLobbyCode = joinCode;
+            document.getElementById('display-code').innerText = `#${joinCode}`;
+            showView('view-lobby');
         } else {
-            const errorMsg = await response.text();
-            alert("Error: " + (errorMsg || "Credenciales inválidas"));
+            showView('view-home');
         }
-    } catch (e) {
-        console.error(e);
-        alert("Error de conexión: Asegúrate de que el Backend en Railway esté encendido.");
     }
-}
-
-function logout() {
-    localStorage.clear();
-    location.reload();
-}
-
+});
