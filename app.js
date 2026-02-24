@@ -18,7 +18,7 @@ async function loadInventory() {
     } catch (error) {
         console.error("Error cargando inventario:", error);
         const container = document.getElementById('themes-container');
-        if (container) container.innerHTML = "<p>Error al conectar con la API.</p>";
+        if (container) container.innerHTML = "<p>Error al conectar con la API. Verifica que las tablas existan en la DB.</p>";
     }
 }
 
@@ -71,7 +71,7 @@ async function toggleSkin(skinId, element) {
  * GESTIÓN DE LOBBY Y RULETA
  */
 function copyInviteLink() {
-    // Corrección: window.location (en minúsculas)
+    // CORRECCIÓN: window.location (en minúsculas) para evitar errores
     const url = `${window.location.origin}?join=${currentLobbyCode}`;
     navigator.clipboard.writeText(url);
     
@@ -125,10 +125,8 @@ async function triggerRoulette() {
  * INICIALIZACIÓN
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // Carga el inventario al iniciar
     loadInventory();
 
-    // Verifica si se está uniendo a una sala por URL
     const params = new URLSearchParams(window.location.search);
     const joinCode = params.get('join');
     if (joinCode) {
