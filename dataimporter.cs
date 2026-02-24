@@ -29,17 +29,54 @@ public class RiotDataService {
                 var skinData = JObject.Parse(detailRaw)["data"][champId]["skins"];
 
                 foreach (var skin in skinData) {
-                    string skinName = skin["name"].ToString();
-                    string skinIdRiot = skin["id"].ToString();
-                    
-                    // Lógica de temáticas
-                    string tema = "Clásica";
-                    if (skinName.ToLower().Contains("proyecto")) tema = "PROYECTO";
-                    else if (skinName.ToLower().Contains("luna sangrienta")) tema = "Luna Sangrienta";
-                    else if (skinName.ToLower().Contains("aspecto de")) tema = "Legado";
+    string skinName = skin["name"].ToString();
+    string skinIdRiot = skin["id"].ToString();
+    
+    // LÓGICA DE DETECCIÓN MEJORADA
+    string tema = "Otros"; // Cambiamos 'Clásica' por 'Otros' para mayor claridad
 
-                    await SaveSkinToDb(conn, skinIdRiot, skinName, tema);
-                }
+    // Diccionario de temáticas comunes (puedes agregar más aquí)
+    var palabrasClave = new Dictionary<string, string> {
+        { "proyecto", "PROYECTO" },
+        { "luna sangrienta", "Luna Sangrienta" },
+        { "k/da", "K/DA" },
+        { "arcade", "Arcade" },
+        { "pool party", "Pool Party" },
+        { "fiesta en la piscina", "Pool Party" },
+        { "estelar", "Guardianas Estelares" },
+        { "guardiana estelar", "Guardianas Estelares" },
+        { "reinos mecha", "Reinos Mecha" },
+        { "odisea", "Odisea" },
+        { "solo ante el peligro", "Forajidos" },
+        { "forajido", "Forajidos" },
+        { "academia de combate", "Academia de Combate" },
+        { "vitoriosa", "Victoriosa" },
+        { "conquistador", "Conquistador" },
+        { "sktt1", "eSports" },
+        { "fnatic", "eSports" },
+        { "tpa", "eSports" },
+        { "ssw", "eSports" },
+        { "ig ", "eSports" },
+        { "fpx", "eSports" },
+        { "dwg", "eSports" },
+        { "drx", "eSports" }
+    };
+
+    // Buscamos si el nombre de la skin contiene alguna palabra clave
+    foreach (var kw in palabrasClave) {
+        if (skinName.ToLower().Contains(kw.Key)) {
+            tema = kw.Value;
+            break;
+        }
+    }
+
+    // Si es la skin base (el nombre de la skin es igual al del campeón), es 'Clásica'
+    if (skinName.ToLower() == champId.ToLower() || skinName.ToLower() == "default") {
+        tema = "Aspecto Base";
+    }
+
+    await SaveSkinToDb(conn, skinIdRiot, skinName, tema);
+}   
             }
         } catch (Exception ex) {
             // Esto imprimirá el error real en la consola de Railway
@@ -67,4 +104,39 @@ public class RiotDataService {
             await cmdSkin.ExecuteNonQueryAsync();
         }
     }
+    public async Task SyncRiotData() {
+    using var client = new HttpClient();
+    try {
+        var versionJson = await client.GetStringAsync("https://ddragon.leagueoflegends.com/api/versions.json");
+        string latestVersion = JArray.Parse(versionJson)[0].ToString();
+        
+        var champsRaw = await client.GetStringAsync($"https://ddragon.leagueoflegends.com/cdn/{latestVersion}/data/es_ES/champion.json");
+        var champions = JObject.Parse(champsRaw)["data"];
+
+        using var conn = new MySqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        foreach (var champProp in champions) {
+            try {
+                string champId = champProp.First["id"].ToString();
+                // Pequeña pausa para no saturar la API de Riot
+                await Task.Delay(100); 
+
+                var detailRaw = await client.GetStringAsync($"https://ddragon.leagueoflegends.com/cdn/{latestVersion}/data/es_ES/champion/{champId}.json");
+                var skinData = JObject.Parse(detailRaw)["data"][champId]["skins"];
+
+                foreach (var skin in skinData) {
+                    // ... (aquí va tu lógica de palabras clave de temáticas)
+                    await SaveSkinToDb(conn, skinIdRiot, skinName, tema);
+                }
+            } catch (Exception ex) {
+                // Si falla un campeón, que siga con el siguiente
+                Console.WriteLine($"Error con el campeón {champProp.Key}: {ex.Message}");
+                continue;
+            }
+        }
+    } catch (Exception ex) {
+        Console.WriteLine("Error general: " + ex.Message);
+    }
+}
 }
