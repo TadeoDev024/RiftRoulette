@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using RiftRoulette.Models;
+using System.Text.Json;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -25,35 +26,37 @@ public class RiftController : ControllerBase
     public IActionResult GetSkins(int userId)
     {
         var list = new List<object>();
-        using var conn = new MySqlConnection(_connectionString);
-        conn.Open();
-        
-        // Corregido: id_skin_riot para coincidir con el resto del código
-        string query = @"
-            SELECT s.id_skin_riot, s.nombre_skin, t.nombre as tematica, 
-            IF(us.id_usuario IS NULL, 0, 1) as poseida
-            FROM Skins s
-            JOIN Tematicas t ON s.id_tematica = t.id_tematica
-            LEFT JOIN Usuario_Skins us ON s.id_skin_riot = us.id_skin_riot AND us.id_usuario = @uid";
-        
-        using var cmd = new MySqlCommand(query, conn);
-        cmd.Parameters.AddWithValue("@uid", userId);
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read()) {
-            list.Add(new { 
-                id = reader["id_skin_riot"].ToString(), 
-                nombre = reader["nombre_skin"].ToString(), 
-                tema = reader["tematica"].ToString(),
-                owned = Convert.ToBoolean(reader["poseida"])
-            });
+        try {
+            using var conn = new MySqlConnection(_connectionString);
+            conn.Open();
+            // Asegúrate de que la columna se llame id_skin_riot en tu DB
+            string query = @"
+                SELECT s.id_skin_riot, s.nombre_skin, t.nombre as tematica, 
+                IF(us.id_usuario IS NULL, 0, 1) as poseida
+                FROM Skins s
+                JOIN Tematicas t ON s.id_tematica = t.id_tematica
+                LEFT JOIN Usuario_Skins us ON s.id_skin_riot = us.id_skin_riot AND us.id_usuario = @uid";
+            
+            using var cmd = new MySqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@uid", userId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                list.Add(new { 
+                    id = reader["id_skin_riot"].ToString(), 
+                    nombre = reader["nombre_skin"].ToString(), 
+                    tema = reader["tematica"].ToString(),
+                    owned = Convert.ToBoolean(reader["poseida"])
+                });
+            }
+            return Ok(list);
+        } catch (Exception ex) {
+            return StatusCode(500, ex.Message); // Esto te dirá el error exacto en el navegador
         }
-        return Ok(list);
     }
 
     [HttpPost("inventory/toggle")]
-    public IActionResult ToggleSkin([FromBody] System.Text.Json.JsonElement data)
+    public IActionResult ToggleSkin([FromBody] JsonElement data)
     {
-        // Corregido el acceso a las propiedades del JSON
         int uid = data.GetProperty("userId").GetInt32();
         string sid = data.GetProperty("skinId").GetString() ?? "";
         bool owned = data.GetProperty("owned").GetBoolean();

@@ -1,18 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MySql.Data.MySqlClient; // CRÍTICO: Faltaba esta línea
+using MySql.Data.MySqlClient;
 using RiftRoulette.Models;
 
 namespace RiftRoulette.Logic {
     public class RouletteService {
-        
         private readonly string _connectionString;
-
-        // Constructor para recibir la conexión de Railway
-        public RouletteService(string connectionString) {
-            _connectionString = connectionString;
-        }
+        public RouletteService(string connectionString) { _connectionString = connectionString; }
 
         private List<dynamic> GetThemesSharedByAll(List<int> userIds) {
             using var conn = new MySqlConnection(_connectionString);
@@ -24,65 +19,16 @@ namespace RiftRoulette.Logic {
                 JOIN Tematicas t ON s.id_tematica = t.id_tematica
                 WHERE us.id_usuario IN (" + string.Join(",", userIds) + @")
                 GROUP BY t.id_tematica
-                HAVING COUNT(DISTINCT us.id_usuario) = @playerCount";
+                HAVING COUNT(DISTINCT us.id_usuario) = " + userIds.Count;
 
             var themes = new List<dynamic>();
             using var cmd = new MySqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@playerCount", userIds.Count);
             using var reader = cmd.ExecuteReader();
             while (reader.Read()) {
                 themes.Add(new { Id = reader.GetInt32(0), Nombre = reader.GetString(1) });
             }
             return themes;
         }
-
-        private List<SkinDTO> GetUserSkinsInTheme(int userId, int themeId) {
-            // Implementar similar a GetThemesSharedByAll para traer skins específicas
-            return new List<SkinDTO>(); 
-        }
-
-        public MatchResult? ExecuteSpin(List<int> userIds) {
-            var possibleThemes = GetThemesSharedByAll(userIds);
-
-            foreach (var theme in possibleThemes) {
-                var assignments = new Dictionary<int, SkinDTO>();
-                if (CanAssign(userIds, theme.Id, 0, new HashSet<int>(), assignments)) {
-                    return new MatchResult {
-                        Tematica = theme.Nombre,
-                        Assignments = assignments.Select(a => new Assignment {
-                            UserId = a.Key,
-                            SkinName = a.Value.Nombre,
-                            SplashUrl = a.Value.Url
-                        }).ToList()
-                    };
-                }
-            }
-            return null;
-        }
-
-        private bool CanAssign(List<int> users, int themeId, int idx, HashSet<int> usedChamps, Dictionary<int, SkinDTO> res) {
-            if (idx == users.Count) return true;
-            var userSkinsInTheme = GetUserSkinsInTheme(users[idx], themeId);
-            foreach (var skin in userSkinsInTheme) {
-                if (!usedChamps.Contains(skin.ChampionId)) {
-                    usedChamps.Add(skin.ChampionId);
-                    res[users[idx]] = skin;
-                    if (CanAssign(users, themeId, idx + 1, usedChamps, res)) return true;
-                    usedChamps.Remove(skin.ChampionId);
-                }
-            }
-            return false;
-        }
+        // ... mantener el resto del código igual ...
     }
-
-    public class MatchResult {
-        public string Tematica { get; set; } = "";
-        public List<Assignment> Assignments { get; set; } = new();
-    }
-
-    public class Assignment {
-        public int UserId { get; set; }
-        public string SkinName { get; set; } = "";
-        public string SplashUrl { get; set; } = "";
-    }
-}
+}   
