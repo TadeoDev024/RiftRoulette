@@ -4,9 +4,26 @@ using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using System.Text;
+using System.Globalization;
+using System.Linq;
 
 public class RiotDataService {
     private readonly string _connectionString = "Server=ballast.proxy.rlwy.net;Port=38239;Database=railway;Uid=root;Pwd=moBtcnWVmvOzjozxaxNqkuxvyoXOWMbR;";
+
+    // Normalizador: Quita tildes, diéresis y pone todo en minúscula
+    private string LimpiarTexto(string texto) {
+        if (string.IsNullOrWhiteSpace(texto)) return texto;
+        var textoNormalizado = texto.Normalize(NormalizationForm.FormD);
+        var constructor = new StringBuilder();
+
+        foreach (var c in textoNormalizado) {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) {
+                constructor.Append(c);
+            }
+        }
+        return constructor.ToString().Normalize(NormalizationForm.FormC).ToLower();
+    }
 
     public async Task SyncRiotData() {
         using var client = new HttpClient();
@@ -19,139 +36,133 @@ public class RiotDataService {
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            // DICCIONARIO MEGA-EXTENDIDO DE TEMÁTICAS (Español e Inglés)
+            // Diccionario SIN TILDES y en minúscula (porque el normalizador limpiará los nombres de las skins)
             var tematicas = new Dictionary<string, string> {
-                { "proyecto", "PROYECTO" }, { "project", "PROYECTO" },
-                { "luna sangrienta", "Luna Sangrienta" }, { "blood moon", "Luna Sangrienta" },
-                { "estrella oscura", "Estrella Oscura" }, { "dark star", "Estrella Oscura" },
-                { "guardiana estelar", "Guardianas Estelares" }, { "star guardian", "Guardianas Estelares" }, { "pijamada estelar", "Guardianas Estelares" }, { "némesis estelar", "Guardianas Estelares" },
-                { "forajid", "Forajidos" }, { "solo ante el peligro", "Forajidos" }, { "high noon", "Forajidos" },
+                { "proyecto", "PROYECTO" },
+                { "luna sangrienta", "Luna Sangrienta" }, { "luna de sangre", "Luna Sangrienta" },
+                { "estrella oscura", "Estrella Oscura" }, { "cosmic", "Estrella Oscura / Cósmicos" }, { "oscuridad cosmica", "Estrella Oscura / Cósmicos" },
+                { "guardian estelar", "Guardianas Estelares" }, { "guardiana estelar", "Guardianas Estelares" }, { "pijama estelar", "Guardianas Estelares" }, { "nemesis estelar", "Guardianas Estelares" },
+                { "forajid", "Forajidos" }, { "solo ante el peligro", "Forajidos" },
                 { "k/da", "K/DA" }, { "kda", "K/DA" }, { "true damage", "True Damage" }, { "pentakill", "Pentakill" }, { "heartsteel", "HEARTSTEEL" },
-                { "arcade", "Arcade" }, { "recreativa", "Arcade" }, { "jefe de batalla", "Arcade" }, { "battle boss", "Arcade" },
-                { "piscina", "Pool Party" }, { "pool party", "Pool Party" }, { "veranieg", "Pool Party" }, { "canción del océano", "Pool Party" },
-                { "florecer espiritual", "Florecer Espiritual" }, { "spirit blossom", "Florecer Espiritual" },
-                { "odisea", "Odisea" }, { "odyssey", "Odisea" },
-                { "academia de combate", "Academia de Combate" }, { "battle academia", "Academia de Combate" },
-                { "onda espacial", "Onda Espacial" }, { "space groove", "Onda Espacial" },
-                { "empíreo", "Empíreo" }, { "empyrean", "Empíreo" },
-                { "peleador de almas", "Peleador de Almas" }, { "soul fighter", "Peleador de Almas" },
-                { "tinta sombría", "Tinta Sombría" }, { "inkshadow", "Tinta Sombría" },
-                { "luna nevada", "Luna Nevada" }, { "snow moon", "Luna Nevada" },
-                { "caballero de la ceniza", "Caballero de la Ceniza" }, { "ashen knight", "Caballero de la Ceniza" },
-                { "creador de mitos", "Creador de Mitos" }, { "mythmaker", "Creador de Mitos" },
-                { "bestia lunar", "Deleite Lunar" }, { "deleite lunar", "Deleite Lunar" }, { "dinamita", "Deleite Lunar" }, { "firecracker", "Deleite Lunar" }, { "reinos combatientes", "Deleite Lunar" },
-                { "reinos mecha", "Reinos Mecha" }, { "mecha kingdoms", "Reinos Mecha" },
-                { "rosa de cristal", "Rosa de Cristal" }, { "rosa marchita", "Rosa de Cristal" }, { "crystal rose", "Rosa de Cristal" },
-                { "galante", "Galante" }, { "debonair", "Galante" },
-                { "ciudad del crimen", "Ciudad del Crimen" }, { "mafios", "Ciudad del Crimen" }, { "crime city", "Ciudad del Crimen" },
-                { "domador de monstruos", "Domador de Monstruos" },
-                { "noche de miedo", "Noche de Miedo" }, { "fright night", "Noche de Miedo" },
-                { "embrujada", "Halloween" }, { "zombi", "Halloween" }, { "conde", "Halloween" }, { "nosferatu", "Halloween" }, { "calabaza", "Halloween" },
-                { "bendición invernal", "Invierno" }, { "maravilla invernal", "Invierno" }, { "día nevado", "Invierno" }, { "elfo", "Invierno" }, { "santa", "Invierno" }, { "nieve", "Invierno" }, { "sejuani jinete", "Invierno" },
-                { "buscacorazones", "Buscacorazones" }, { "cariñosit", "Buscacorazones" }, { "cupido", "Buscacorazones" }, { "heartseeker", "Buscacorazones" },
-                { "victorios", "Victoriosa" }, { "victorious", "Victoriosa" },
-                { "campeonato", "Campeonato" }, { "championship", "Campeonato" },
-                { "conquistador", "Conquistador" }, { "conqueror", "Conquistador" },
-                { "aspirante", "Aspirante" }, { "challenger", "Aspirante" },
+                { "arcade", "Arcade" }, { "recreativ", "Arcade" }, { "jefe de batalla", "Arcade" }, { "subjefe", "Arcade" },
+                { "piscina", "Pool Party" }, { "veranieg", "Pool Party" },
+                { "florecer espiritual", "Florecer Espiritual" }, { "flor espiritual", "Florecer Espiritual" },
+                { "odisea", "Odisea" },
+                { "academia de combate", "Academia de Combate" },
+                { "onda espacial", "Onda Espacial" },
+                { "empireo", "Empíreo" },
+                { "peleador de almas", "Peleador de Almas" }, { "luchador de almas", "Peleador de Almas" },
+                { "tinta sombria", "Tinta Sombría" },
+                { "luna nevada", "Luna Nevada" },
+                { "caballero de la ceniza", "Caballero de la Ceniza" }, { "caballero ceniza", "Caballero de la Ceniza" },
+                { "creador de mitos", "Creador de Mitos" },
+                { "deleite lunar", "Deleite Lunar" }, { "dinamita", "Deleite Lunar" }, { "artificio", "Deleite Lunar" }, { "bestia lunar", "Deleite Lunar" },
+                { "reinos mecha", "Reinos Mecha" },
+                { "rosa de cristal", "Rosa de Cristal" }, { "rosa marchita", "Rosa de Cristal" },
+                { "galante", "Galante" },
+                { "ciudad del crimen", "Ciudad del Crimen" }, { "mafios", "Ciudad del Crimen" },
+                { "noche de miedo", "Noche de Miedo" },
+                { "embrujad", "Halloween" }, { "zombi", "Halloween" }, { "conde", "Halloween" }, { "nosferatu", "Halloween" }, { "calabaza", "Halloween" }, { "murcielago", "Halloween" }, { "embrujo", "Halloween" },
+                { "invernal", "Invierno" }, { "maravilla invernal", "Invierno" }, { "nevado", "Invierno" }, { "nieve", "Invierno" }, { "santa", "Invierno" }, { "elfo", "Invierno" }, { "frio", "Invierno" },
+                { "buscacorazones", "Buscacorazones" }, { "cariñosit", "Buscacorazones" }, { "cupido", "Buscacorazones" }, { "rompecorazones", "Buscacorazones" }, { "amoros", "Buscacorazones" },
+                { "victorios", "Victoriosa" },
+                { "campeonato", "Campeonato" }, { "mundial", "Campeonato" },
+                { "conquistador", "Conquistador" },
                 { "hextech", "Hextech" },
                 { "prestigios", "Edición Prestigiosa" }, { "prestigio", "Edición Prestigiosa" },
                 { "arcane", "Arcane" },
-                { "astronauta", "Astronauta" }, { "astronaut", "Astronauta" },
-                { "abeja", "Abejitas" }, { "abejita", "Abejitas" }, { "bee", "Abejitas" },
-                { "porcelana", "Porcelana" }, { "porcelain", "Porcelana" },
-                { "cafetería", "Cafetería" }, { "cafe cuties", "Cafetería" },
-                { "chef", "Culinarios" }, { "panader", "Culinarios" }, { "carnicer", "Culinarios" }, { "sushiman", "Culinarios" }, { "cociner", "Culinarios" },
-                { "comando", "Comando" }, { "commando", "Comando" },
-                { "cyber pop", "Cyber Pop" },
-                { "definitivamente no", "Día de las Bromas" }, { "este no es", "Día de las Bromas" }, { "bardo bardo", "Día de las Bromas" }, { "miaukai", "Día de las Bromas" }, { "pugMaw", "Día de las Bromas" },
-                { "dracomante", "Dracomantes" }, { "dragón", "Dragones" }, { "matadragones", "Dragones" },
-                { "terror nova", "Terror Nova" }, { "dreadnova", "Terror Nova" },
-                { "pergaminos shan hai", "Pergaminos Shan Hai" }, { "fábulas", "Fábulas" },
-                { "gótico", "Gótico" }, { "pesadilla", "Gótico" },
-                { "cazador de cabezas", "Cazador de Cabezas" }, { "headhunter", "Cazador de Cabezas" },
-                { "lucha libre", "Lucha Libre" }, { "enmascarad", "Lucha Libre" }, { "el león", "Lucha Libre" }, { "el macho", "Lucha Libre" }, { "el rayo", "Lucha Libre" },
+                { "astronauta", "Astronauta" },
+                { "abejit", "Abejitas" }, { "abeja", "Abejitas" },
+                { "porcelana", "Porcelana" },
+                { "cafeteria", "Cafetería" }, { "cafe", "Cafetería" },
+                { "chef", "Culinarios" }, { "panader", "Culinarios" }, { "carnicer", "Culinarios" }, { "sushiman", "Culinarios" }, { "cociner", "Culinarios" }, { "pizza", "Culinarios" },
+                { "comando", "Comando" },
+                { "cyber pop", "Cyber Pop" }, { "ciber pop", "Cyber Pop" },
+                { "definitivamente no", "Día de las Bromas" }, { "este no es", "Día de las Bromas" }, { "bardo bardo", "Día de las Bromas" }, { "miaukai", "Día de las Bromas" }, { "pugmaw", "Día de las Bromas" },
+                { "dracomante", "Dracomantes" }, { "dragon", "Dragones" }, { "matadragon", "Dragones" },
+                { "terror nova", "Terror Nova" },
+                { "pergaminos shan hai", "Pergaminos Shan Hai" }, { "shan hai", "Pergaminos Shan Hai" },
+                { "fabulas", "Fábulas" }, { "fabula", "Fábulas" },
+                { "gotic", "Gótico" }, { "pesadilla", "Gótico" },
+                { "cazador de cabezas", "Cazador de Cabezas" }, { "cazadora de cabezas", "Cazador de Cabezas" },
+                { "lucha libre", "Lucha Libre" }, { "enmascarad", "Lucha Libre" }, { "el leon", "Lucha Libre" }, { "el macho", "Lucha Libre" }, { "el rayo", "Lucha Libre" }, { "tigre", "Lucha Libre" },
                 { "merodeador", "Merodeadores y Celadores" }, { "celador", "Merodeadores y Celadores" },
-                { "escuadrón omega", "Escuadrón Omega" },
-                { "de papel", "De Papel" }, { "papercraft", "De Papel" },
-                { "faraón", "Guardián de las Arenas" }, { "arenas", "Guardián de las Arenas" }, { "sandstorm", "Guardián de las Arenas" },
-                { "pirata", "Aguas Turbias" }, { "aguas turbias", "Aguas Turbias" }, { "bucaner", "Aguas Turbias" }, { "bilgewater", "Aguas Turbias" }, { "corsari", "Aguas Turbias" }, { "capitán", "Aguas Turbias" }, { "corta y rasga", "Aguas Turbias" },
+                { "escuadron omega", "Escuadrón Omega" },
+                { "de papel", "De Papel" }, { "origami", "De Papel" },
+                { "faraon", "Guardián de las Arenas" }, { "arenas", "Guardián de las Arenas" }, { "shurima", "Guardián de las Arenas" },
+                { "pirata", "Aguas Turbias" }, { "aguas turbias", "Aguas Turbias" }, { "bucaner", "Aguas Turbias" }, { "corsari", "Aguas Turbias" }, { "capitan", "Aguas Turbias" }, { "corta y rasga", "Aguas Turbias" },
                 { "pretoriano", "Pretoriano" },
-                { "prehistórico", "Prehistórico" }, { "dinosaurio", "Prehistórico" },
-                { "programa", "Programa" }, { "program ", "Programa" },
+                { "prehistoric", "Prehistórico" }, { "dinosaurio", "Prehistórico" },
+                { "programa", "Programa" },
                 { "riot", "Riot" },
-                { "agente secreto", "Agente Secreto" },
-                { "hoja relámpago", "Hoja Relámpago" }, { "shockblade", "Hoja Relámpago" },
+                { "agente secreto", "Agente Secreto" }, { "espia", "Agente Secreto" },
+                { "hoja relampago", "Hoja Relámpago" },
                 { "valquiria", "Valquirias de Acero" }, { "almirante", "Valquirias de Acero" },
-                { "frenesí azucarado", "Frenesí Azucarado" }, { "dulce", "Frenesí Azucarado" }, { "sugar rush", "Frenesí Azucarado" },
-                { "juguete", "Juguetes" }, { "toy", "Juguetes" }, { "muñec", "Juguetes" },
-                { "vándalo", "Vándalos" }, { "vandal", "Vándalos" },
-                { "rompemundos", "Rompemundos" }, { "worldbreaker", "Rompemundos" },
-                { "juegos del cénit", "Juegos del Cénit" },
-                { "pacto quebrado", "Pacto Quebrado" }, { "broken covenant", "Pacto Quebrado" },
-                { "corte feérica", "Corte Feérica" }, { "faerie court", "Corte Feérica" },
-                { "demonios callejeros", "Demonios Callejeros" }, { "street demon", "Demonios Callejeros" },
-                { "escamas celestiales", "Escamas Celestiales" }, { "heavenscale", "Escamas Celestiales" },
-                { "emboscada primigenia", "Emboscada Primigenia" }, { "primal ambush", "Emboscada Primigenia" },
-                { "aquelarre", "Aquelarre" }, { "coven", "Aquelarre" }, { "dios antiguo", "Aquelarre" },
-                { "bosqueviejo", "Bosqueviejo" }, { "elderwood", "Bosqueviejo" },
+                { "frenesi azucarado", "Frenesí Azucarado" }, { "dulce", "Frenesí Azucarado" }, { "caramelo", "Frenesí Azucarado" },
+                { "juguete", "Juguetes" }, { "muñec", "Juguetes" }, { "trapo", "Juguetes" },
+                { "vandal", "Vándalos" },
+                { "rompemundos", "Rompemundos" }, { "rompe mundos", "Rompemundos" },
+                { "corte feerica", "Corte Feérica" }, { "feeric", "Corte Feérica" },
+                { "demonios callejeros", "Demonios Callejeros" }, { "demonio callejero", "Demonios Callejeros" },
+                { "escamas celestiales", "Escamas Celestiales" }, { "escama celestial", "Escamas Celestiales" },
+                { "emboscada primigenia", "Emboscada Primigenia" },
+                { "aquelarre", "Aquelarre" }, { "dios antiguo", "Aquelarre" },
+                { "bosqueviejo", "Bosqueviejo" }, { "bosque viejo", "Bosqueviejo" }, { "arboleda", "Bosqueviejo" },
                 { "eclipse", "Eclipse" },
-                { "arruinado", "Arruinados" }, { "ruined", "Arruinados" },
-                { "centinela", "Centinelas de la Luz" }, { "sentinel", "Centinelas de la Luz" },
-                { "meca", "Meca" }, { "mecha ", "Meca" }, { "mecha zero", "Meca" },
-                { "máquina de guerra", "Máquina de Guerra" }, { "battlecast", "Máquina de Guerra" }, { "resistencia", "Resistencia" },
-                { "escarcha oscura", "Escarcha Oscura" }, { "blackfrost", "Escarcha Oscura" },
-                { "infernal", "Infernal" }, { "fuego sombrío", "Infernal" }, { "volcánic", "Infernal" },
-                { "luz celestial", "Luz Celestial" }, { "arclight", "Luz Celestial" }, { "justicier", "Luz Celestial" },
-                { "portador del amanecer", "Amanecer y Anochecer" }, { "portador de la noche", "Amanecer y Anochecer" }, { "amanecer", "Amanecer y Anochecer" }, { "anochecer", "Amanecer y Anochecer" }, { "dawnbringer", "Amanecer y Anochecer" }, { "nightbringer", "Amanecer y Anochecer" },
+                { "arruinad", "Arruinados" }, { "rey arruinado", "Arruinados" },
+                { "centinela", "Centinelas de la Luz" },
+                { "meca", "Meca" }, { "mecha", "Meca" },
+                { "maquina de guerra", "Máquina de Guerra" }, { "resistencia", "Máquina de Guerra" },
+                { "escarcha oscura", "Escarcha Oscura" },
+                { "infernal", "Infernal" }, { "fuego", "Infernal" }, { "volcanic", "Infernal" }, { "diabolic", "Infernal" },
+                { "luz celestial", "Luz Celestial" }, { "justicier", "Luz Celestial" }, { "arco de luz", "Luz Celestial" },
+                { "portador del amanecer", "Amanecer y Anochecer" }, { "portador de la noche", "Amanecer y Anochecer" }, { "amanecer", "Amanecer y Anochecer" }, { "anochecer", "Amanecer y Anochecer" }, { "heraldo", "Amanecer y Anochecer" },
                 { "crystalis", "Crystalis Motus" },
-                { "fnc ", "eSports" }, { "tpa ", "eSports" }, { "skt t1", "eSports" }, { "ssw ", "eSports" }, { "ig ", "eSports" }, { "fpx ", "eSports" }, { "dwg ", "eSports" }, { "edg ", "eSports" }, { "drx ", "eSports" }, { "t1 ", "eSports" },
-                { "supergaláctic", "Supergalácticos" },
+                { "fnc ", "eSports" }, { "tpa ", "eSports" }, { "skt t1", "eSports" }, { "ssw ", "eSports" }, { "ig ", "eSports" }, { "fpx ", "eSports" }, { "dwg ", "eSports" }, { "edg ", "eSports" }, { "drx ", "eSports" }, { "t1 ", "eSports" }, { "esports", "eSports" },
+                { "supergalactic", "Supergalácticos" },
                 { "psyops", "PsyOps" },
-                { "ilusión lunar", "Ilusión Lunar" },
                 { "rey dios", "Reyes Dioses" }, { "dios rey", "Reyes Dioses" },
-                { "purgador", "Purgadores" }, { "purifier", "Purgadores" },
-                { "inmortal", "Viaje Inmortal" }, { "espada divina", "Viaje Inmortal" }, { "báculo divino", "Viaje Inmortal" }, { "espada majestuosa", "Viaje Inmortal" },
-                { "shurima", "Regiones de Runaterra" }, { "freljord", "Regiones de Runaterra" }, { "noxus", "Regiones de Runaterra" }, { "noxian", "Regiones de Runaterra" }, { "demacia", "Regiones de Runaterra" }, { "jonia", "Regiones de Runaterra" },
+                { "inmortal", "Viaje Inmortal" }, { "espada divina", "Viaje Inmortal" }, { "baculo divino", "Viaje Inmortal" }, { "espada majestuosa", "Viaje Inmortal" },
                 { "eternum", "Eternum" },
-                { "pulso de fuego", "Pulso de Fuego" }, { "pulsefire", "Pulso de Fuego" },
-                { "corrupción", "Demacia Vice" }, { "demacia vice", "Demacia Vice" },
-                { "rey de las clavadas", "Deportes" }, { "delantero", "Deportes" }, { "portero", "Deportes" }, { "árbitro", "Deportes" }, { "líbero", "Deportes" },
+                { "pulso de fuego", "Pulso de Fuego" },
+                { "demacia vice", "Demacia Vice" }, { "vice", "Demacia Vice" },
+                { "deportes", "Deportes" }, { "delantero", "Deportes" }, { "portero", "Deportes" }, { "arbitro", "Deportes" }, { "libero", "Deportes" }, { "baloncest", "Deportes" },
                 { "pax ", "PAX" },
-                { "rolero", "RPG" }, { "barbablanca", "RPG" }, { "martillo", "RPG" }, { "corazón de león", "RPG" }
+                { "rolero", "RPG" }, { "barbablanca", "RPG" }, { "martillo", "RPG" }, { "corazon de leon", "RPG" },
+                { "belic", "Bélico" }, { "blindaje", "Bélico" }
             };
 
             foreach (var champProp in champions) {
                 string champId = champProp.First["id"].ToString();
                 string champName = champProp.First["name"].ToString();
-                
-                // Mapeo dinámico de líneas basado en roles de Riot (Preparación para la Fase 2)
                 string tags = champProp.First["tags"].ToString();
                 string linea = AsignarLinea(champId, tags);
 
-                await Task.Delay(25); // Evitar saturar API
+                await Task.Delay(25); 
 
                 var detailRaw = await client.GetStringAsync($"https://ddragon.leagueoflegends.com/cdn/{latestVersion}/data/es_ES/champion/{champId}.json");
                 var skinData = JObject.Parse(detailRaw)["data"][champId]["skins"];
 
                 foreach (var skin in skinData) {
-                    string skinName = skin["name"].ToString();
+                    string skinNameRiot = skin["name"].ToString();
                     string skinIdRiot = skin["id"].ToString();
                     string skinNum = skin["num"].ToString();
 
-                    // FILTRO INFALIBLE: num == "0" es siempre la skin base. Se ignora por completo.
-                    if (skinNum == "0") continue; 
+                    if (skinNum == "0") continue; // Filtrar aspectos base
 
-                    // Por defecto, lo que no encuentre entra a "Otras / Únicas"
+                    // APLICAR EL NORMALIZADOR AL NOMBRE DE LA SKIN
+                    string skinNameLimpio = LimpiarTexto(skinNameRiot);
                     string tema = "Otras / Únicas";
                     
                     foreach (var kw in tematicas) {
-                        if (skinName.ToLower().Contains(kw.Key)) {
+                        if (skinNameLimpio.Contains(kw.Key)) {
                             tema = kw.Value;
                             break;
                         }
                     }
 
-                    await SaveSkinToDb(conn, skinIdRiot, skinName, champName, linea, tema);
+                    // Guardamos el nombre original para que se vea bien visualmente, pero clasificamos usando el limpio
+                    await SaveSkinToDb(conn, skinIdRiot, skinNameRiot, champName, linea, tema);
                 }
             }
         } catch (Exception ex) { Console.WriteLine("ERROR SYNC: " + ex.Message); }
@@ -159,7 +170,7 @@ public class RiotDataService {
 
     private string AsignarLinea(string champId, string tags) {
         var dictLineas = new Dictionary<string, string> {
-            { "Aatrox", "Top" }, { "Camille", "Top" }, { "Darius", "Top" }, { "Fiora", "Top" }, { "Garen", "Top" }, { "Irelia", "Top" }, { "Jax", "Top" }, { "Malphite", "Top" }, { "Mordekaiser", "Top" }, { "Nasus", "Top" }, { "Ornn", "Top" }, { "Renekton", "Top" }, { "Sett", "Top" }, { "Sion", "Top" }, { "Teemo", "Top" }, { "Urgot", "Top" }, { "Volibear", "Top" }, { "Kwen", "Top" }, { "Illaoi", "Top" }, { "Kled", "Top" }, { "Gnar", "Top" }, { "Shen", "Top" }, { "Yorick", "Top" },
+            { "Aatrox", "Top" }, { "Camille", "Top" }, { "Darius", "Top" }, { "Fiora", "Top" }, { "Garen", "Top" }, { "Irelia", "Top" }, { "Jax", "Top" }, { "Malphite", "Top" }, { "Mordekaiser", "Top" }, { "Nasus", "Top" }, { "Ornn", "Top" }, { "Renekton", "Top" }, { "Sett", "Top" }, { "Sion", "Top" }, { "Teemo", "Top" }, { "Urgot", "Top" }, { "Volibear", "Top" }, { "Gwen", "Top" }, { "Illaoi", "Top" }, { "Kled", "Top" }, { "Gnar", "Top" }, { "Shen", "Top" }, { "Yorick", "Top" },
             { "Amumu", "Jungle" }, { "Diana", "Jungle" }, { "Ekko", "Jungle" }, { "Evelynn", "Jungle" }, { "Fiddlesticks", "Jungle" }, { "Graves", "Jungle" }, { "Hecarim", "Jungle" }, { "JarvanIV", "Jungle" }, { "Kayn", "Jungle" }, { "KhaZix", "Jungle" }, { "Kindred", "Jungle" }, { "LeeSin", "Jungle" }, { "MasterYi", "Jungle" }, { "Nidalee", "Jungle" }, { "Nocturne", "Jungle" }, { "Nunu", "Jungle" }, { "Rengar", "Jungle" }, { "Sejuani", "Jungle" }, { "Shaco", "Jungle" }, { "Vi", "Jungle" }, { "Viego", "Jungle" }, { "XinZhao", "Jungle" }, { "Zac", "Jungle" }, { "Udyr", "Jungle" }, { "Rammus", "Jungle" }, { "Warwick", "Jungle" }, { "Trundle", "Jungle" },
             { "Ahri", "Mid" }, { "Akali", "Mid" }, { "Anivia", "Mid" }, { "Annie", "Mid" }, { "Azir", "Mid" }, { "Cassiopeia", "Mid" }, { "Fizz", "Mid" }, { "Katarina", "Mid" }, { "LeBlanc", "Mid" }, { "Lissandra", "Mid" }, { "Malzahar", "Mid" }, { "Orianna", "Mid" }, { "Qiyana", "Mid" }, { "Ryze", "Mid" }, { "Sylas", "Mid" }, { "Syndra", "Mid" }, { "Talon", "Mid" }, { "TwistedFate", "Mid" }, { "Veigar", "Mid" }, { "Viktor", "Mid" }, { "Vladimir", "Mid" }, { "Yasuo", "Mid" }, { "Yone", "Mid" }, { "Zed", "Mid" }, { "Zoe", "Mid" }, { "AurelionSol", "Mid" }, { "Naafiri", "Mid" }, { "Hwei", "Mid" }, { "Kassadin", "Mid" }, { "Galio", "Mid" },
             { "Aphelios", "ADC" }, { "Ashe", "ADC" }, { "Caitlyn", "ADC" }, { "Draven", "ADC" }, { "Ezreal", "ADC" }, { "Jhin", "ADC" }, { "Jinx", "ADC" }, { "Kaisa", "ADC" }, { "Kalista", "ADC" }, { "KogMaw", "ADC" }, { "Lucian", "ADC" }, { "MissFortune", "ADC" }, { "Samira", "ADC" }, { "Sivir", "ADC" }, { "Tristana", "ADC" }, { "Twitch", "ADC" }, { "Varus", "ADC" }, { "Vayne", "ADC" }, { "Xayah", "ADC" }, { "Zeri", "ADC" }, { "Smolder", "ADC" }, { "Nilah", "ADC" },
@@ -168,7 +179,6 @@ public class RiotDataService {
 
         if (dictLineas.ContainsKey(champId)) return dictLineas[champId];
 
-        // Fallback genérico si es un campeón que no está en la lista principal
         if (tags.Contains("Marksman")) return "ADC";
         if (tags.Contains("Support")) return "Support";
         if (tags.Contains("Assassin")) return "Mid";
