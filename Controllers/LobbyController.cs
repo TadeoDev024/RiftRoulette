@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using RiftRoulette.Models; // Esto vincula el archivo que creamos arriba
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
