@@ -10,14 +10,13 @@ public class RiftController : ControllerBase
 
     public RiftController(IConfiguration configuration)
     {
-        // Lee la conexión configurada para Railway
-        _connectionString = configuration.GetConnectionString("DefaultConnection");
+        _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
     }
 
     [HttpGet("sync-data")]
     public async Task<IActionResult> Sync()
     {
-        var service = new RiotDataService(); // Asegúrate de que el método sea público en dataimporter.cs
+        var service = new RiotDataService();
         await service.SyncRiotData();
         return Ok("Sincronización con Riot completada.");
     }
@@ -28,6 +27,8 @@ public class RiftController : ControllerBase
         var list = new List<object>();
         using var conn = new MySqlConnection(_connectionString);
         conn.Open();
+        
+        // Corregido: id_skin_riot para coincidir con el resto del código
         string query = @"
             SELECT s.id_skin_riot, s.nombre_skin, t.nombre as tematica, 
             IF(us.id_usuario IS NULL, 0, 1) as poseida
@@ -40,20 +41,21 @@ public class RiftController : ControllerBase
         using var reader = cmd.ExecuteReader();
         while (reader.Read()) {
             list.Add(new { 
-                id = reader["id_skin_riot"], 
-                nombre = reader["nombre_skin"], 
-                tema = reader["tematica"],
-                owned = reader.GetBoolean("poseida")
+                id = reader["id_skin_riot"].ToString(), 
+                nombre = reader["nombre_skin"].ToString(), 
+                tema = reader["tematica"].ToString(),
+                owned = Convert.ToBoolean(reader["poseida"])
             });
         }
         return Ok(list);
     }
 
     [HttpPost("inventory/toggle")]
-    public IActionResult ToggleSkin([FromBody] dynamic data)
+    public IActionResult ToggleSkin([FromBody] System.Text.Json.JsonElement data)
     {
+        // Corregido el acceso a las propiedades del JSON
         int uid = data.GetProperty("userId").GetInt32();
-        long sid = data.GetProperty("skinId").GetInt64();
+        string sid = data.GetProperty("skinId").GetString() ?? "";
         bool owned = data.GetProperty("owned").GetBoolean();
 
         using var conn = new MySqlConnection(_connectionString);
@@ -68,5 +70,4 @@ public class RiftController : ControllerBase
         cmd.ExecuteNonQuery();
         return Ok();
     }
-   
 }

@@ -1,21 +1,19 @@
-const API_URL = "https://riftroulette-production.up.railway.app/"; // URL generada en Railway
+const API_URL = "https://riftroulette-production.up.railway.app/api";
 
 let currentLobbyCode = "";
-let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+// Usuario de prueba si no hay uno logueado
+let currentUser = JSON.parse(localStorage.getItem('user')) || { userId: 1, username: "admin" };
 
-// Sincronizar skins (botón de pánico)
-async function syncRiotData() {
-    if (!confirm("¿Deseas sincronizar la base de datos con Riot Games?")) return;
-    const response = await fetch(`${API_URL}/Rift/sync-data`);
-    if (response.ok) alert("Skins actualizadas con éxito.");
-}
-
-// Gestión de Inventario
 async function loadInventory() {
-    if (!currentUser) return;
-    const response = await fetch(`${API_URL}/Rift/skins/${currentUser.userId}`);
-    const skins = await response.json();
-    renderInventory(skins);
+    try {
+        const response = await fetch(`${API_URL}/Rift/skins/${currentUser.userId}`);
+        if (!response.ok) throw new Error("Error en el servidor");
+        const skins = await response.json();
+        renderInventory(skins);
+    } catch (error) {
+        console.error("Error cargando inventario:", error);
+        document.getElementById('themes-container').innerHTML = "<p>Error al conectar con la API.</p>";
+    }
 }
 
 function renderInventory(skins) {
@@ -30,11 +28,12 @@ function renderInventory(skins) {
 
     container.innerHTML = Object.keys(grouped).map(tema => `
         <div class="theme-group">
-            <h3>${tema}</h3>
+            <h3 class="theme-title">${tema}</h3>
             <div class="skins-row">
                 ${grouped[tema].map(s => `
                     <div class="skin-card ${s.owned ? 'owned' : ''}" onclick="toggleSkin('${s.id}', this)">
-                        <img src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${s.nombre.replace(/ /g, '')}_0.jpg" onerror="this.src='https://via.placeholder.com/150'">
+                        <img src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${s.nombre.replace(/\s/g, '')}_0.jpg" 
+                             onerror="this.src='https://via.placeholder.com/150x80?text=Skin'">
                         <span>${s.nombre}</span>
                     </div>
                 `).join('')}
@@ -44,20 +43,21 @@ function renderInventory(skins) {
 }
 
 async function toggleSkin(skinId, element) {
-    const isOwned = !element.classList.contains('owned');
+    const isNowOwned = !element.classList.contains('owned');
     element.classList.toggle('owned');
+
     await fetch(`${API_URL}/Rift/inventory/toggle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.userId, skinId: skinId, owned: isOwned })
+        body: JSON.stringify({ 
+            userId: currentUser.userId, 
+            skinId: skinId, 
+            owned: isNowOwned 
+        })
     });
 }
 
-// Lobby e Invitaciones
-function copyInviteLink() {
-    const url = `${window.location.origin}?join=${currentLobbyCode}`;
-    navigator.clipboard.writeText(url);
-    const note = document.getElementById('notification');
-    note.classList.add('show');
-    setTimeout(() => note.classList.remove('show'), 2500);
-}
+// Cargar inventario al iniciar si estamos en la vista correcta
+document.addEventListener('DOMContentLoaded', () => {
+    loadInventory();
+});
