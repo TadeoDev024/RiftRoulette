@@ -15,6 +15,14 @@ public class RiftController : ControllerBase
         _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
     }
 
+    [HttpGet("sync-data")]
+    public async Task<IActionResult> Sync()
+    {
+        var service = new RiotDataService();
+        await service.SyncRiotData();
+        return Ok("Sincronización con Riot completada.");
+    }
+
     [HttpGet("skins/{userId}")]
     public IActionResult GetSkins(int userId)
     {
@@ -22,8 +30,9 @@ public class RiftController : ControllerBase
         try {
             using var conn = new MySqlConnection(_connectionString);
             conn.Open();
+            // AHORA PEDIMOS LA COLUMNA s.campeon
             string query = @"
-                SELECT s.id_skin_riot, s.nombre_skin, t.nombre as tematica, 
+                SELECT s.id_skin_riot, s.nombre_skin, s.campeon, t.nombre as tematica, 
                 IF(us.id_usuario IS NULL, 0, 1) as poseida
                 FROM Skins s
                 JOIN Tematicas t ON s.id_tematica = t.id_tematica
@@ -32,10 +41,12 @@ public class RiftController : ControllerBase
             using var cmd = new MySqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@uid", userId);
             using var reader = cmd.ExecuteReader();
+            
             while (reader.Read()) {
                 list.Add(new { 
                     id = reader["id_skin_riot"].ToString(), 
                     nombre = reader["nombre_skin"].ToString(), 
+                    campeon = reader["campeon"].ToString(), // Enviamos el campeón puro al frontend
                     tema = reader["tematica"].ToString(),
                     owned = Convert.ToBoolean(reader["poseida"])
                 });
@@ -56,7 +67,6 @@ public class RiftController : ControllerBase
 
             using var conn = new MySqlConnection(_connectionString);
             conn.Open();
-            
             string query = owned 
                 ? "INSERT IGNORE INTO Usuario_Skins (id_usuario, id_skin_riot) VALUES (@uid, @sid)" 
                 : "DELETE FROM Usuario_Skins WHERE id_usuario = @uid AND id_skin_riot = @sid";
@@ -68,8 +78,7 @@ public class RiftController : ControllerBase
             
             return Ok();
         } catch (Exception ex) {
-            // Si hay un error, lo enviamos de vuelta al frontend para saber qué pasó
-            return StatusCode(500, "Error guardando la skin: " + ex.Message);
+            return StatusCode(500, "Error guardando skin: " + ex.Message);
         }
     }
 }

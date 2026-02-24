@@ -1,33 +1,36 @@
 const API_URL = "https://riftroulette-production.up.railway.app/api";
 let isLoginMode = true;
-let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 let currentLobbyCode = null;
-let lobbyInterval = null; // Controla la auto-actualización de la sala
+let lobbyInterval = null; 
+let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 
 // --- NAVEGACIÓN SPA ---
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => {
-        v.style.display = 'none';
         v.classList.remove('active');
+        v.style.display = 'none';
     });
-    const target = document.getElementById(viewId);
-    if (target) {
-        target.style.display = 'block';
-        target.classList.add('active');
+
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.add('active');
+        targetView.style.display = 'block';
     }
-    
-    document.getElementById('main-nav').style.display = viewId === 'view-auth' ? 'none' : 'flex';
 
-    if (viewId === 'view-inventory') loadInventory();
+    const mainNav = document.getElementById('main-nav');
+    if (mainNav) {
+        mainNav.style.display = (viewId === 'view-auth' || !currentUser) ? 'none' : 'flex';
+    }
 
-    // Detener auto-actualización si salimos de la sala
+    if (viewId === 'view-inventory' && currentUser) loadInventory();
+
     if (viewId !== 'view-lobby' && lobbyInterval) {
         clearInterval(lobbyInterval);
         lobbyInterval = null;
     }
 }
 
-// --- AUTH (LOGIN / REGISTRO) ---
+// --- AUTH ---
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
     document.getElementById('auth-title').innerText = isLoginMode ? "Bienvenido" : "Crear Cuenta";
@@ -37,6 +40,8 @@ function toggleAuthMode() {
 async function handleAuth() {
     const user = document.getElementById('auth-user').value;
     const pass = document.getElementById('auth-pass').value;
+    if (!user || !pass) return alert("Completa todos los campos");
+
     const endpoint = isLoginMode ? "Auth/login" : "Auth/register";
 
     try {
@@ -52,7 +57,7 @@ async function handleAuth() {
             currentUser = data;
             showView('view-home');
         } else {
-            alert("Error en las credenciales o el usuario ya existe.");
+            alert("Credenciales inválidas o el usuario ya existe.");
         }
     } catch (e) {
         alert("Error de conexión con el servidor.");
@@ -64,17 +69,16 @@ function logout() {
     location.reload();
 }
 
-// --- INVENTARIO (MIS SKINS) ---
+// --- INVENTARIO ---
 async function loadInventory() {
-    if (!currentUser) return;
     try {
         const response = await fetch(`${API_URL}/Rift/skins/${currentUser.userId}`);
-        if (!response.ok) throw new Error("Error obteniendo skins");
+        if (!response.ok) throw new Error("Error en el servidor");
         const skins = await response.json();
         renderInventory(skins);
     } catch (error) {
-        console.error("Error cargando inventario:", error);
-        document.getElementById('themes-container').innerHTML = "<p>Error de conexión al cargar skins.</p>";
+        const container = document.getElementById('themes-container');
+        if (container) container.innerHTML = "<p>Error al cargar skins.</p>";
     }
 }
 
@@ -93,29 +97,26 @@ function renderInventory(skins) {
             <h3 class="theme-title">${tema}</h3>
             <div class="skins-row">
                 ${grouped[tema].map(s => {
-                    const champName = s.nombre.split(' ')[0];
-                    const skinIndex = s.id.slice(-2);
-                    const imgUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champName}_${parseInt(skinIndex)}.jpg`;
+                    // FIX DE IMÁGENES: Usamos el s.campeon real y una fórmula exacta para el ID
+                    const champName = s.campeon ? s.campeon.replace(/\s/g, '') : "Unknown";
+                    const skinIndex = parseInt(s.id) % 1000; 
+                    const imgUrl = \`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/\${champName}_\${skinIndex}.jpg\`;
 
-                    return `
-                        <div class="skin-card ${s.owned ? 'owned' : ''}" onclick="toggleSkin('${s.id}', this)">
+                    return \`
+                        <div class="skin-card \${s.owned ? 'owned' : ''}" onclick="toggleSkin('\${s.id}', this)">
                             <div class="skin-img-wrapper">
-                                <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/300x170/121214/FFFFFF?text=${s.nombre}'">
+                                <img src="\${imgUrl}" onerror="this.src='https://via.placeholder.com/300x170/121214/FFFFFF?text=\${encodeURIComponent(s.nombre)}'">
                             </div>
-                            <div class="skin-name">${s.nombre}</div>
+                            <div class="skin-name">\${s.nombre}</div>
                         </div>
-                    `;
+                    \`;
                 }).join('')}
             </div>
         </div>
     `).join('');
 }
 
-// ESTA ES LA FUNCIÓN CRÍTICA QUE GUARDA EL CLICK
 async function toggleSkin(skinId, element) {
-    if (!currentUser) return;
-    
-    // Evitar que el usuario haga doble click rápido y rompa la sincronización
     element.style.pointerEvents = 'none'; 
     const isNowOwned = !element.classList.contains('owned');
 
@@ -123,34 +124,25 @@ async function toggleSkin(skinId, element) {
         const res = await fetch(`${API_URL}/Rift/inventory/toggle`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: currentUser.userId,
-                skinId: skinId,
-                owned: isNowOwned
-            })
+            body: JSON.stringify({ userId: currentUser.userId, skinId: skinId, owned: isNowOwned })
         });
-
-        if (res.ok) {
-            // Si el servidor confirma, cambiamos el color visualmente
-            element.classList.toggle('owned');
-        } else {
-            console.error("Error del servidor al guardar.");
-            alert("No se pudo guardar la skin. Verifica tu conexión.");
-        }
+        
+        if (res.ok) element.classList.toggle('owned');
+        else alert("Error guardando. Revisa tu conexión.");
     } catch (error) {
-        console.error("Error de fetch guardando skin:", error);
+        console.error("Error:", error);
     } finally {
         element.style.pointerEvents = 'auto';
     }
 }
 
-// --- TEAM BUILDER Y SALAS ---
+// --- TEAM BUILDER ---
 async function createNewLobby() {
     try {
         const response = await fetch(`${API_URL}/Lobby/create`, { method: 'POST' });
         const data = await response.json();
         await joinLobbyRequest(data.lobbyCode);
-    } catch (e) { alert("Error al crear la sala"); }
+    } catch (e) { alert("Error al crear sala"); }
 }
 
 async function joinLobbyRequest(code) {
@@ -168,14 +160,13 @@ async function joinLobbyRequest(code) {
             showView('view-lobby');
             refreshTeamBuilder();
             
-            // MAGIA: Auto-Actualizar la sala cada 3 segundos
             if (!lobbyInterval) {
                 lobbyInterval = setInterval(refreshTeamBuilder, 3000);
             }
         } else {
-            alert("La sala está llena o no existe.");
+            alert("Sala llena o inexistente.");
         }
-    } catch (e) { console.error("Error uniéndose a sala:", e); }
+    } catch (e) { console.error("Error sala:", e); }
 }
 
 function copyInviteLink() {
@@ -192,7 +183,7 @@ async function refreshTeamBuilder() {
     if (!currentLobbyCode) return;
     try {
         const res = await fetch(`${API_URL}/Lobby/teambuilder/${currentLobbyCode}`);
-        if (!res.ok) throw new Error("Error obteniendo datos del servidor");
+        if (!res.ok) throw new Error("Error servidor");
         const data = await res.json();
         renderTeamBuilder(data);
     } catch (e) { console.error(e); }
@@ -203,7 +194,7 @@ function renderTeamBuilder(data) {
     if (!container) return;
 
     if (Object.keys(data).length === 0) {
-        container.innerHTML = "<p style='text-align:center;'>Aún no hay coincidencias. Selecciona skins en tu inventario o invita amigos.</p>";
+        container.innerHTML = "<p style='text-align:center;'>Aún no hay coincidencias. Selecciona skins o invita amigos.</p>";
         return;
     }
 
@@ -237,17 +228,18 @@ function renderTeamBuilder(data) {
     container.innerHTML = html;
 }
 
-// --- INICIALIZACIÓN AL CARGAR LA PÁGINA ---
+// --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
     if (!currentUser) {
         showView('view-auth');
     } else {
-        showView('view-home');
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const joinCode = params.get('join');
-    if (joinCode && currentUser) {
-        joinLobbyRequest(joinCode);
+        const params = new URLSearchParams(window.location.search);
+        const joinCode = params.get('join');
+        
+        if (joinCode) {
+            joinLobbyRequest(joinCode);
+        } else {
+            showView('view-home');
+        }
     }
 });
