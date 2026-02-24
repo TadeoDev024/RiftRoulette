@@ -1,7 +1,9 @@
 using Newtonsoft.Json.Linq; // Instalar vía NuGet
-
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using MySql.Data.MySqlClient;
 public class RiotDataService {
-    private readonly string _connectionString = "Tu_ConnectionString_Railway";
+    private readonly string _connectionString = "mysql://root:moBtcnWVmvOzjozxaxNqkuxvyoXOWMbR@ballast.proxy.rlwy.net:38239/railway";
 
     public async Task SyncRiotData() {
         using var client = new HttpClient();

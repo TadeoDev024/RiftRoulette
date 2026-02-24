@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using RiftRoulette.Models; // Esto vincula el archivo que creamos arriba
-
+using MySql.Data.MySqlClient; // CRÍTICO: Para MySqlConnection y MySqlCommand
 [ApiController]
 [Route("api/[controller]")]
 public class RiftController : ControllerBase

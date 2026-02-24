@@ -1,4 +1,7 @@
-using RiftRoulette.Models;
+using RiftRoulette.Models;  
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using MySql.Data.MySqlClient;
 public class RouletteService {
     public class MatchResult {
         public string Tematica { get; set; }
