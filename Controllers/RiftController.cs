@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
-using RiftRoulette.Models;
 using System.Text.Json;
+using System.Collections.Generic;
+using System;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -14,14 +15,6 @@ public class RiftController : ControllerBase
         _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
     }
 
-    [HttpGet("sync-data")]
-    public async Task<IActionResult> Sync()
-    {
-        var service = new RiotDataService();
-        await service.SyncRiotData();
-        return Ok("Sincronización con Riot completada.");
-    }
-
     [HttpGet("skins/{userId}")]
     public IActionResult GetSkins(int userId)
     {
@@ -29,7 +22,6 @@ public class RiftController : ControllerBase
         try {
             using var conn = new MySqlConnection(_connectionString);
             conn.Open();
-            // Asegúrate de que la columna se llame id_skin_riot en tu DB
             string query = @"
                 SELECT s.id_skin_riot, s.nombre_skin, t.nombre as tematica, 
                 IF(us.id_usuario IS NULL, 0, 1) as poseida
@@ -50,27 +42,34 @@ public class RiftController : ControllerBase
             }
             return Ok(list);
         } catch (Exception ex) {
-            return StatusCode(500, ex.Message); // Esto te dirá el error exacto en el navegador
+            return StatusCode(500, ex.Message);
         }
     }
 
     [HttpPost("inventory/toggle")]
     public IActionResult ToggleSkin([FromBody] JsonElement data)
     {
-        int uid = data.GetProperty("userId").GetInt32();
-        string sid = data.GetProperty("skinId").GetString() ?? "";
-        bool owned = data.GetProperty("owned").GetBoolean();
+        try {
+            int uid = data.GetProperty("userId").GetInt32();
+            string sid = data.GetProperty("skinId").GetString() ?? "";
+            bool owned = data.GetProperty("owned").GetBoolean();
 
-        using var conn = new MySqlConnection(_connectionString);
-        conn.Open();
-        string query = owned 
-            ? "INSERT IGNORE INTO Usuario_Skins (id_usuario, id_skin_riot) VALUES (@uid, @sid)" 
-            : "DELETE FROM Usuario_Skins WHERE id_usuario = @uid AND id_skin_riot = @sid";
-        
-        using var cmd = new MySqlCommand(query, conn);
-        cmd.Parameters.AddWithValue("@uid", uid);
-        cmd.Parameters.AddWithValue("@sid", sid);
-        cmd.ExecuteNonQuery();
-        return Ok();
+            using var conn = new MySqlConnection(_connectionString);
+            conn.Open();
+            
+            string query = owned 
+                ? "INSERT IGNORE INTO Usuario_Skins (id_usuario, id_skin_riot) VALUES (@uid, @sid)" 
+                : "DELETE FROM Usuario_Skins WHERE id_usuario = @uid AND id_skin_riot = @sid";
+            
+            using var cmd = new MySqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@uid", uid);
+            cmd.Parameters.AddWithValue("@sid", sid);
+            cmd.ExecuteNonQuery();
+            
+            return Ok();
+        } catch (Exception ex) {
+            // Si hay un error, lo enviamos de vuelta al frontend para saber qué pasó
+            return StatusCode(500, "Error guardando la skin: " + ex.Message);
+        }
     }
 }
