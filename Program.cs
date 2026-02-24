@@ -11,14 +11,16 @@ builder.Services.AddEndpointsApiExplorer();
 // 2. Configuración de CORS para Vercel
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowVercel",
+    options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.WithOrigins("https://tu-proyecto.vercel.app") // Cambia por tu URL real de Vercel
+            policy.AllowAnyOrigin() // Permite cualquier URL (Vercel, Localhost, etc.)
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
 });
+
+// ... más abajo en el archivo ...
 
 // 3. Autenticación JWT
 var key = Encoding.ASCII.GetBytes("ESTA_ES_UNA_LLAVE_SUPER_SECRETA_Y_LARGA_12345");
@@ -49,3 +51,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+app.UseCors("AllowAll"); // Asegúrate de que use el nombre correcto

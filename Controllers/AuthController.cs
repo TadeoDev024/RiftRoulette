@@ -54,4 +54,16 @@ public class AuthController : ControllerBase
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
+    [HttpPost("register")]
+public async Task<IActionResult> Register([FromBody] LoginRequest req)
+{
+    // Aquí deberías agregar la lógica para guardar en la base de datos MySQL
+    // Por ahora, simulamos un registro exitoso devolviendo un token
+    var token = GenerateJwtToken(req.Username);
+    return Ok(new { 
+        token = token, 
+        username = req.Username, 
+        userId = 1 // En producción, esto vendría del ID autogenerado en MySQL
+    });
+}
 }

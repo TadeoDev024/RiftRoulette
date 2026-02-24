@@ -167,13 +167,22 @@ function showView(viewId) {
     if(viewId === 'view-inventory') loadInventory();
 }
 
+// Cambia entre modo Login y Registro visualmente
+function toggleAuthMode() {
+    isLoginMode = !isLoginMode;
+    document.getElementById('auth-title').innerText = isLoginMode ? "Bienvenido" : "Crear Cuenta";
+    document.getElementById('auth-switch').innerText = isLoginMode ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Ingresa";
+}
+
 async function handleAuth() {
     const user = document.getElementById('auth-user').value;
     const pass = document.getElementById('auth-pass').value;
+    
+    // Determinamos a qué endpoint llamar según el modo
+    const endpoint = isLoginMode ? "Auth/login" : "Auth/register";
 
-    // Conexión real con tu AuthController.cs
     try {
-        const response = await fetch(`${API_URL}/auth/login`, {
+        const response = await fetch(`${API_URL}/${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ Username: user, Password: pass })
@@ -185,10 +194,12 @@ async function handleAuth() {
             currentUser = data;
             showView('view-home');
         } else {
-            alert("Credenciales incorrectas");
+            const errorMsg = await response.text();
+            alert("Error: " + (errorMsg || "Credenciales inválidas"));
         }
     } catch (e) {
-        alert("Error de conexión con el servidor");
+        console.error(e);
+        alert("Error de conexión: Asegúrate de que el Backend en Railway esté encendido.");
     }
 }
 
