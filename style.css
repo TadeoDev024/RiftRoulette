@@ -165,3 +165,92 @@ input:focus { border-color: var(--accent); }
     font-weight: 600;
     text-align: center;
 }
+/* --- ESTILOS DEL TEAM BUILDER --- */
+.lobby-card {
+    background: var(--bg-card);
+    padding: 3rem;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+.tb-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+.tb-header h3 { color: var(--accent); font-size: 1.5rem; }
+
+.team-group {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.team-group h4 {
+    color: var(--gold);
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.roles-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 columnas exactas para Top, Jg, Mid, Adc, Sup */
+    gap: 15px;
+}
+
+@media (max-width: 900px) {
+    .roles-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}
+
+.role-column {
+    background: var(--bg-card);
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.role-title {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    font-weight: 900;
+    letter-spacing: 1px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #333;
+}
+
+.role-option {
+    background: rgba(0, 207, 212, 0.05);
+    border-left: 3px solid var(--accent);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.role-option strong { display: block; color: #fff; font-size: 0.95rem; }
+.role-option .skin-name-small { color: var(--text-dim); font-size: 0.75rem; display: block; margin-bottom: 5px; }
+.role-option .player-name { color: var(--gold); font-size: 0.8rem; font-weight: 600; }
+
+.role-empty {
+    text-align: center;
+    color: #444;
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: 20px 0;
+}

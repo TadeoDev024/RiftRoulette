@@ -55,16 +55,24 @@
 
     <section id="view-lobby" class="view container">
         <div class="lobby-card">
-            <div class="header-row">
+            <div class="header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2>SALA: <span id="display-code" class="accent">#-----</span></h2>
-                <button class="btn-secondary" onclick="copyInviteLink()">Copiar Invitación</button>
+                <div>
+                    <button class="btn-secondary" onclick="copyInviteLink()" style="margin-right: 10px;">Copiar Invitación</button>
+                    <button class="btn-main" onclick="refreshTeamBuilder()">Actualizar Equipos</button>
+                </div>
             </div>
-            <div id="player-grid" class="player-grid"></div>
-            <div class="roulette-wrapper">
-                <div id="wheel" class="wheel">?</div>
-                <button id="spin-btn" class="btn-main" onclick="triggerRoulette()">GIRAR RULETA</button>
+            
+            <div class="team-builder-wrapper">
+                <div class="tb-header">
+                    <h3>Composiciones Disponibles</h3>
+                    <p>Las siguientes temáticas tienen skins disponibles entre los jugadores de la sala.</p>
+                </div>
+                
+                <div id="team-results" class="team-results-container">
+                    <p style="text-align:center; color: var(--text-dim);">Esperando jugadores o procesando inventarios...</p>
+                </div>
             </div>
-            <div id="result-display" class="result-display"></div>
         </div>
     </section>
 

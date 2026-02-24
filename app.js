@@ -183,40 +183,6 @@ function copyInviteLink() {
         setTimeout(() => note.classList.remove('show'), 2500);
     }
 }
-
-async function triggerRoulette() {
-    const btn = document.getElementById('spin-btn');
-    const wheel = document.getElementById('wheel');
-    const resultDiv = document.getElementById('result-display');
-
-    if (!currentLobbyCode) return alert("Debes estar en una sala activa");
-
-    btn.disabled = true;
-    wheel.style.transition = "transform 4s cubic-bezier(0.15, 0, 0.15, 1)";
-    wheel.style.transform = `rotate(${3600 + Math.random() * 360}deg)`;
-
-    try {
-        const response = await fetch(`${API_URL}/roulette/spin/${currentLobbyCode}`);
-        if (!response.ok) throw new Error("No hay temáticas compartidas.");
-        
-        const data = await response.json();
-
-        setTimeout(() => {
-            wheel.innerText = data.tematica;
-            resultDiv.innerHTML = data.assignments.map(a => `
-                <div class="assign-card">
-                    <strong>${a.username || 'Jugador'}:</strong> ${a.skinName}
-                </div>
-            `).join('');
-            btn.disabled = false;
-        }, 4000);
-    } catch (e) {
-        alert(e.message);
-        btn.disabled = false;
-        wheel.style.transform = "rotate(0deg)";
-    }
-}
-
 /**
  * INICIALIZACIÓN AL CARGAR
  */
@@ -237,4 +203,108 @@ document.addEventListener('DOMContentLoaded', () => {
             showView('view-home');
         }
     }
+    // --- LÓGICA DEL TEAM BUILDER Y SALAS ---
+let currentLobbyCode = null;
+
+// Crear sala y unirse automáticamente
+async function createNewLobby() {
+    try {
+        const response = await fetch(`${API_URL}/Lobby/create`, { method: 'POST' });
+        const data = await response.json();
+        await joinLobbyRequest(data.lobbyCode);
+    } catch (e) { alert("Error al crear la sala"); }
+}
+
+// Unirse a una sala
+async function joinLobbyRequest(code) {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`${API_URL}/Lobby/join/${code}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ UserId: currentUser.userId, Username: currentUser.username })
+        });
+        
+        if (res.ok) {
+            currentLobbyCode = code;
+            document.getElementById('display-code').innerText = `#${currentLobbyCode}`;
+            showView('view-lobby');
+            refreshTeamBuilder(); 
+        } else {
+            alert("La sala está llena o no existe.");
+        }
+    } catch (e) { console.error("Error uniéndose a sala:", e); }
+}
+
+function copyInviteLink() {
+    const url = `${window.location.origin}?join=${currentLobbyCode}`;
+    navigator.clipboard.writeText(url);
+    const note = document.getElementById('notification');
+    if (note) {
+        note.classList.add('show');
+        setTimeout(() => note.classList.remove('show'), 2500);
+    }
+}
+
+// Traer las composiciones del backend
+async function refreshTeamBuilder() {
+    if (!currentLobbyCode) return;
+    try {
+        const res = await fetch(`${API_URL}/Lobby/teambuilder/${currentLobbyCode}`);
+        if (!res.ok) throw new Error("Error obteniendo datos");
+        const data = await res.json();
+        renderTeamBuilder(data);
+    } catch (e) { console.error(e); }
+}
+
+// Dibujar las composiciones en pantalla
+function renderTeamBuilder(data) {
+    const container = document.getElementById('team-results');
+    if (!container) return;
+
+    if (Object.keys(data).length === 0) {
+        container.innerHTML = "<p style='text-align:center;'>Aún no hay coincidencias. Invita a más amigos o agreguen más skins a su inventario.</p>";
+        return;
+    }
+
+    let html = "";
+    const ordenLineas = ["Top", "Jungle", "Mid", "ADC", "Support"];
+
+    for (const [tematica, lineas] of Object.entries(data)) {
+        html += `<div class="team-group">
+                    <h4>${tematica}</h4>
+                    <div class="roles-grid">`;
+
+        ordenLineas.forEach(rol => {
+            html += `<div class="role-column">
+                        <div class="role-title">${rol}</div>`;
+
+            if (lineas[rol] && lineas[rol].length > 0) {
+                lineas[rol].forEach(opcion => {
+                    html += `<div class="role-option">
+                                <strong>${opcion.campeon}</strong>
+                                <span class="skin-name-small">${opcion.skin}</span>
+                                <span class="player-name">👤 ${opcion.jugador}</span>
+                             </div>`;
+                });
+            } else {
+                html += `<div class="role-empty">Sin opciones</div>`;
+            }
+            html += `</div>`;
+        });
+
+        html += `</div></div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+// Auto-unirse si el link tiene un código ?join=XYZ
+document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const joinCode = params.get('join');
+    if (joinCode && currentUser) {
+        joinLobbyRequest(joinCode);
+    }
+});
 });
