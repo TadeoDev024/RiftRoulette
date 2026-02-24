@@ -1,3 +1,4 @@
+using RiftRoulette.Models;
 public class RouletteService {
     public class MatchResult {
         public string Tematica { get; set; }
