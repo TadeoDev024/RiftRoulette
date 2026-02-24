@@ -4,15 +4,15 @@ EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["TuProyecto.csproj", "."]
-RUN dotnet restore "./TuProyecto.csproj"
+COPY ["RiftRoulette.csproj", "."]
+RUN dotnet restore "./RiftRoulette.csproj"
 COPY . .
-RUN dotnet build "TuProyecto.csproj" -c Release -o /app/build
+RUN dotnet build "RiftRoulette.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "TuProyecto.csproj" -c Release -o /app/publish
+RUN dotnet publish "RiftRoulette.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "TuProyecto.dll"]
+ENTRYPOINT ["dotnet", "RiftRoulette.dll"]
