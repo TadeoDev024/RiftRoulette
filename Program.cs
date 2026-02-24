@@ -45,10 +45,8 @@ builder.Services.AddAuthentication(x =>
 var app = builder.Build();
 
 // 4. Pipeline de ejecución
-app.UseCors("AllowVercel");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
+app.UseCors("AllowAll");
 app.Run();
-app.UseCors("AllowAll"); // Asegúrate de que use el nombre correcto
