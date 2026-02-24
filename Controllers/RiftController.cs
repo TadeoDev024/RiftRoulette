@@ -68,11 +68,5 @@ public class RiftController : ControllerBase
         cmd.ExecuteNonQuery();
         return Ok();
     }
-    [HttpGet("sync-data")]
-public async Task<IActionResult> Sync()
-{
-    var service = new RiotDataService();
-    await service.SyncRiotData(); // Esto poblará las tablas Tematicas, Campeones y Skins
-    return Ok(new { message = "Sincronización completada exitosamente" });
-}
+   
 }
