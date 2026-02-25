@@ -413,3 +413,156 @@ input:focus { border-color: var(--accent); }
     max-width: 1200px;
     margin: 0 auto;
 }
+/* --- LÓGICA DE VISIBILIDAD --- */
+.view { display: none; }
+.view.active { display: block; }
+
+#view-auth.active {
+    display: flex !important;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- BUSCADOR --- */
+#skin-search {
+    width: 100%;
+    max-width: 500px;
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    font-family: inherit;
+}
+
+/* --- BOTONES Y ESPACIADO --- */
+.home-card .btn-main {
+    margin-top: 2.5rem;
+}
+
+.btn-switch {
+    margin-top: 2.5rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 10px;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* Mantener estilos de cartas y colores previos aquí... */
+/* --- LÓGICA DE VISIBILIDAD (REEMPLAZA LO ANTERIOR) --- */
+.view { 
+    display: none !important; 
+}
+
+.view.active { 
+    display: block !important; 
+}
+
+/* CENTRADO DEL LOGIN */
+#view-auth.active {
+    display: flex !important;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    margin: 0;
+}
+
+/* BUSCADOR */
+#skin-search {
+    width: 100%;
+    max-width: 500px;
+    background: #1a1a1c;
+    border: 1px solid var(--accent);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    outline: none;
+}
+
+#skin-search:focus {
+    box-shadow: 0 0 10px rgba(0, 207, 212, 0.4);
+}
+
+/* ESPACIADOS DE BOTONES */
+.home-card .btn-main { margin-top: 2.5rem; }
+.btn-switch { margin-top: 2.5rem; cursor: pointer; background: none; border: 1px solid #333; color: #aaa; padding: 10px; width: 100%; }
+.view { 
+    display: none !important; 
+}
+.view.active { 
+    display: block !important; 
+}
+
+/* --- CENTRADO TOTAL DEL LOGIN --- */
+#view-auth.active {
+    display: flex !important;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    background-color: #000; /* Fondo negro como en tu imagen */
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    background-color: #1a1a1c;
+    padding: 2.5rem;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra horizontalmente todo el contenido */
+    text-align: center;
+}
+
+.auth-inputs {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Espacio entre inputs y botón */
+    align-items: center;
+}
+
+.auth-inputs input {
+    width: 100%;
+    padding: 12px;
+    background: #000;
+    border: 1px solid #333;
+    color: white;
+    border-radius: 8px;
+    text-align: center; /* Centra el texto que escribes */
+}
+
+.btn-main {
+    width: 100%;
+    background-color: #00cfd4; /* Color cyan neón */
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-main:hover {
+    box-shadow: 0 0 15px rgba(0, 207, 212, 0.6);
+}
+
+.btn-switch {
+    margin-top: 1.5rem;
+    background: transparent;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    text-decoration: underline;
+}

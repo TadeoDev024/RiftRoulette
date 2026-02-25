@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
-using RiftRoulette.Models;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,17 +9,18 @@ using System.Threading.Tasks;
 [Route("api/[controller]")]
 public class LobbyController : ControllerBase
 {
-    private static readonly Dictionary<string, List<PlayerDto>> Lobbies = new();
+    // Usamos ConcurrentDictionary para que las salas sean totalmente independientes en memoria
+    private static readonly ConcurrentDictionary<string, List<PlayerDto>> Lobbies = new();
     private readonly string _connectionString;
 
-    // Inyectamos la configuración para conectar a MySQL
     public LobbyController(IConfiguration configuration) {
         _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
     }
 
     [HttpPost("create")]
     public IActionResult CreateLobby() {
-        string code = System.Guid.NewGuid().ToString().Substring(0, 5).ToUpper();
+        // Genera un código único de 6 caracteres
+        string code = System.Guid.NewGuid().ToString().Substring(0, 6).ToUpper();
         Lobbies[code] = new List<PlayerDto>();
         return Ok(new { lobbyCode = code });
     }
@@ -27,32 +28,29 @@ public class LobbyController : ControllerBase
     [HttpPost("join/{code}")]
     public IActionResult JoinLobby(string code, [FromBody] PlayerDto player) {
         if (!Lobbies.ContainsKey(code)) return NotFound("Sala no encontrada");
-        if (Lobbies[code].Count >= 5) return BadRequest("Sala llena");
-        
-        if (!Lobbies[code].Any(p => p.UserId == player.UserId))
-            Lobbies[code].Add(player);
-
-        return Ok(new { players = Lobbies[code] });
-    }
-
-    // EL NUEVO MOTOR: TEAM BUILDER
-    [HttpGet("teambuilder/{code}")]
-    public async Task<IActionResult> GetTeamBuilder(string code) {
-        if (!Lobbies.ContainsKey(code)) return NotFound("Sala no encontrada");
         
         var players = Lobbies[code];
-        if (players.Count == 0) return Ok(new { });
-
-        // Extraemos los IDs de todos los jugadores de la sala
-        string userIds = string.Join(",", players.Select(p => p.UserId));
+        if (players.Count >= 5 && !players.Any(p => p.UserId == player.UserId)) 
+            return BadRequest("Sala llena");
         
-        // Estructura: Temática -> Línea -> Lista de Opciones (Campeón, Skin, Jugador)
+        if (!players.Any(p => p.UserId == player.UserId))
+            players.Add(player);
+
+        return Ok(new { lobbyCode = code, players = players });
+    }
+
+    [HttpGet("teambuilder/{code}")]
+    public async Task<IActionResult> GetTeamBuilder(string code) {
+        if (!Lobbies.TryGetValue(code, out var players) || players.Count == 0) 
+            return Ok(new { });
+
+        string userIds = string.Join(",", players.Select(p => p.UserId));
         var teamBuilderData = new Dictionary<string, Dictionary<string, List<object>>>();
 
         using var conn = new MySqlConnection(_connectionString);
         await conn.OpenAsync();
 
-        // Esta súper-query cruza los inventarios de TODOS los que están en la sala
+        // La query busca las skins de los usuarios que están registrados en ESTA sala específicamente
         string query = $@"
             SELECT t.nombre as tematica, s.linea, s.campeon, s.nombre_skin, u.username
             FROM Usuario_Skins us
@@ -71,16 +69,12 @@ public class LobbyController : ControllerBase
             
             if (!teamBuilderData.ContainsKey(tematica)) {
                 teamBuilderData[tematica] = new Dictionary<string, List<object>> {
-                    { "Top", new List<object>() },
-                    { "Jungle", new List<object>() },
-                    { "Mid", new List<object>() },
-                    { "ADC", new List<object>() },
-                    { "Support", new List<object>() },
-                    { "Flex", new List<object>() } // Por si algún campeón no encaja bien
+                    { "Top", new List<object>() }, { "Jungle", new List<object>() },
+                    { "Mid", new List<object>() }, { "ADC", new List<object>() },
+                    { "Support", new List<object>() }, { "Flex", new List<object>() }
                 };
             }
 
-            // Agregamos la skin disponible a su respectiva línea dentro de la temática
             if (teamBuilderData[tematica].ContainsKey(linea)) {
                 teamBuilderData[tematica][linea].Add(new {
                     campeon = reader.GetString(reader.GetOrdinal("campeon")),
@@ -89,7 +83,6 @@ public class LobbyController : ControllerBase
                 });
             }
         }
-
         return Ok(teamBuilderData);
     }
 }
