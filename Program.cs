@@ -8,28 +8,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// 2. Configuración de CORS para Vercel
+// 2. Configuración de CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin() // Permite cualquier URL (Vercel, Localhost, etc.)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 
-// ... más abajo en el archivo ...
-
-// 3. Autenticación JWT
+// 3. Autenticación JWT 
 var key = Encoding.ASCII.GetBytes("ESTA_ES_UNA_LLAVE_SUPER_SECRETA_Y_LARGA_12345");
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(x =>
+}).AddJwtBearer(x =>
 {
     x.RequireHttpsMetadata = false;
     x.SaveToken = true;
@@ -44,9 +40,15 @@ builder.Services.AddAuthentication(x =>
 
 var app = builder.Build();
 
-// 4. Pipeline de ejecución
+// 4. PIPELINE DE EJECUCIÓN (EL ORDEN CORRECTO)
+app.UseRouting();
+
+// ¡CORS DEBE IR DESPUÉS DE ROUTING Y ANTES DE AUTH/CONTROLLERS!
+app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
-app.UseCors("AllowAll");
+
 app.Run();

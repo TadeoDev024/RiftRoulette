@@ -40,12 +40,16 @@ function toggleAuthMode() {
 }
 
 async function handleAuth() {
-    const user = document.getElementById('auth-user').value.trim();
-    const pass = document.getElementById('auth-pass').value.trim();
+    const userField = document.getElementById('auth-user');
+    const passField = document.getElementById('auth-pass');
+    if (!userField || !passField) return;
+
+    const user = userField.value.trim();
+    const pass = passField.value.trim();
     const isLogin = document.getElementById('auth-title').innerText === "Bienvenido";
     const endpoint = isLogin ? "login" : "register";
 
-    if(!user || !pass) return alert("Completa los campos");
+    if (!user || !pass) return alert("Completa los campos");
 
     try {
         const res = await fetch(`${API_URL}/Rift/${endpoint}`, {
@@ -54,19 +58,22 @@ async function handleAuth() {
             body: JSON.stringify({ Username: user, Password: pass })
         });
 
-        const data = await res.json();
         if (res.ok) {
+            const data = await res.json();
             currentUser = { userId: data.userId, username: user };
             localStorage.setItem('user', JSON.stringify(currentUser));
             showView('view-home');
         } else {
-            alert(data.message || "Error de credenciales");
+            // Manejo de errores controlados (400, 401, etc)
+            const errorData = await res.json().catch(() => ({ message: "Error desconocido" }));
+            alert(errorData.message || "Error de credenciales");
         }
     } catch (e) {
-        alert("Servidor despertando... intenta en unos segundos.");
+        // Este error ocurre cuando el servidor está en "Cold Start"
+        console.error(e);
+        alert("El servidor está despertando. Por favor, intenta de nuevo en 20 segundos.");
     }
 }
-
 function logout() {
     localStorage.clear();
     location.reload();

@@ -6,17 +6,18 @@ using System.Threading.Tasks;
 using System;
 
 [ApiController]
-[Route("api/[controller]")] // Genera la base: api/Rift
+[Route("api/[controller]")]
 public class RiftController : ControllerBase
 {
     private readonly string _connectionString;
 
     public RiftController(IConfiguration configuration) {
+        // Prioridad a la variable de entorno de Render
         _connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") 
                             ?? configuration.GetConnectionString("DefaultConnection") ?? "";
     }
 
-    [HttpPost("login")] // Ruta: api/Rift/login
+    [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] UserDto model) {
         try {
             using var conn = new MySqlConnection(_connectionString);
@@ -35,7 +36,7 @@ public class RiftController : ControllerBase
         } catch (Exception ex) { return StatusCode(500, ex.Message); }
     }
 
-    [HttpPost("register")] // Ruta: api/Rift/register
+    [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] UserDto model) {
         try {
             using var conn = new MySqlConnection(_connectionString);
@@ -46,7 +47,7 @@ public class RiftController : ControllerBase
             cmd.Parameters.AddWithValue("@p", model.Password);
             await cmd.ExecuteNonQueryAsync();
             return await Login(model); 
-        } catch (Exception ex) { return StatusCode(500, "Error: El usuario ya existe."); }
+        } catch (Exception ex) { return StatusCode(500, "Error: El usuario ya existe o error de conexión."); }
     }
 
     [HttpGet("skins/{userId}")]
