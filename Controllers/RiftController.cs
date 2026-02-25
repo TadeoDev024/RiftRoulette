@@ -10,29 +10,26 @@ public class RiftController : ControllerBase
 {
     private readonly string _connectionString;
 
-    public RiftController(IConfiguration configuration)
-    {
+    public RiftController(IConfiguration configuration) {
         _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
     }
 
     [HttpGet("sync-data")]
-    public async Task<IActionResult> Sync()
-    {
+    public async Task<IActionResult> Sync() {
         var service = new RiotDataService();
         await service.SyncRiotData();
         return Ok("Sincronización con Riot completada.");
     }
 
     [HttpGet("skins/{userId}")]
-    public IActionResult GetSkins(int userId)
-    {
+    public IActionResult GetSkins(int userId) {
         var list = new List<object>();
         try {
             using var conn = new MySqlConnection(_connectionString);
             conn.Open();
-            // AHORA PEDIMOS LA COLUMNA s.campeon
+            // AHORA PEDIMOS LA COLUMNA s.campeon_id
             string query = @"
-                SELECT s.id_skin_riot, s.nombre_skin, s.campeon, t.nombre as tematica, 
+                SELECT s.id_skin_riot, s.nombre_skin, s.campeon, s.campeon_id, t.nombre as tematica, 
                 IF(us.id_usuario IS NULL, 0, 1) as poseida
                 FROM Skins s
                 JOIN Tematicas t ON s.id_tematica = t.id_tematica
@@ -46,7 +43,8 @@ public class RiftController : ControllerBase
                 list.Add(new { 
                     id = reader["id_skin_riot"].ToString(), 
                     nombre = reader["nombre_skin"].ToString(), 
-                    campeon = reader["campeon"].ToString(), // Enviamos el campeón puro al frontend
+                    campeon = reader["campeon"].ToString(), 
+                    campeonId = reader["campeon_id"].ToString(), // VITAL PARA IMÁGENES
                     tema = reader["tematica"].ToString(),
                     owned = Convert.ToBoolean(reader["poseida"])
                 });
@@ -58,8 +56,7 @@ public class RiftController : ControllerBase
     }
 
     [HttpPost("inventory/toggle")]
-    public IActionResult ToggleSkin([FromBody] JsonElement data)
-    {
+    public IActionResult ToggleSkin([FromBody] JsonElement data) {
         try {
             int uid = data.GetProperty("userId").GetInt32();
             string sid = data.GetProperty("skinId").GetString() ?? "";

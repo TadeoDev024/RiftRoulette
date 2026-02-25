@@ -1,10 +1,9 @@
-const API_URL = "https://riftroulette-production.up.railway.app/api";
+const API_URL = "https://skinsynergy-api.onrender.com/api";
 let isLoginMode = true;
 let currentLobbyCode = null;
 let lobbyInterval = null; 
 let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 
-// --- NAVEGACIÓN SPA ---
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => {
         v.classList.remove('active');
@@ -30,7 +29,6 @@ function showView(viewId) {
     }
 }
 
-// --- AUTH ---
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
     document.getElementById('auth-title').innerText = isLoginMode ? "Bienvenido" : "Crear Cuenta";
@@ -69,7 +67,6 @@ function logout() {
     location.reload();
 }
 
-// --- INVENTARIO ---
 async function loadInventory() {
     try {
         const response = await fetch(`${API_URL}/Rift/skins/${currentUser.userId}`);
@@ -86,28 +83,38 @@ function renderInventory(skins) {
     const container = document.getElementById('themes-container');
     if (!container) return;
 
+    // MAGIA: Ahora agrupamos por CAMPEÓN en la vista de Inventario
     const grouped = skins.reduce((acc, skin) => {
-        if (!acc[skin.tema]) acc[skin.tema] = [];
-        acc[skin.tema].push(skin);
+        const champ = skin.campeon || "Unknown";
+        if (!acc[champ]) acc[champ] = [];
+        acc[champ].push(skin);
         return acc;
     }, {});
 
-    container.innerHTML = Object.keys(grouped).map(tema => `
-        <div class="theme-group">
-            <h3 class="theme-title">${tema}</h3>
-            <div class="skins-row">
-                ${grouped[tema].map(s => {
-                    // FIX DE IMÁGENES: Usamos el s.campeon real y una fórmula exacta para el ID
-                    const champName = s.campeon ? s.campeon.replace(/\s/g, '') : "Unknown";
-                    const skinIndex = parseInt(s.id) % 1000; 
-                    const imgUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champName}_${skinIndex}.jpg`;
+    // Ordenamos los campeones alfabéticamente para que sea fácil buscarlos
+    const sortedChamps = Object.keys(grouped).sort();
 
+    container.innerHTML = sortedChamps.map(champ => `
+        <div class="theme-group">
+            <h3 class="theme-title" style="color: white; border-left: 4px solid var(--accent);">${champ}</h3>
+            <div class="skins-row">
+                ${grouped[champ].map(s => {
+                    // FIX DEFINITIVO DE IMÁGENES
+                    const champId = s.campeonId || "Unknown";
+                    const skinIndex = parseInt(s.id) % 1000; 
+                    const imgUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champId}_${skinIndex}.jpg`;
+
+                    // Mostramos el nombre de la skin y abajo, en pequeño, a qué temática pertenece
                     return `
                         <div class="skin-card ${s.owned ? 'owned' : ''}" onclick="toggleSkin('${s.id}', this)">
                             <div class="skin-img-wrapper">
                                 <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/300x170/121214/FFFFFF?text=${encodeURIComponent(s.nombre)}'">
                             </div>
-                            <div class="skin-name">${s.nombre}</div>
+                            <div class="skin-name">
+                                ${s.nombre}
+                                <br>
+                                <small style="color: var(--gold); font-size: 0.7rem; font-weight: 400;">${s.tema}</small>
+                            </div>
                         </div>
                     `;
                 }).join('')}
@@ -136,7 +143,6 @@ async function toggleSkin(skinId, element) {
     }
 }
 
-// --- TEAM BUILDER ---
 async function createNewLobby() {
     try {
         const response = await fetch(`${API_URL}/Lobby/create`, { method: 'POST' });
@@ -172,11 +178,22 @@ async function joinLobbyRequest(code) {
 function copyInviteLink() {
     const url = `${window.location.origin}?join=${currentLobbyCode}`;
     navigator.clipboard.writeText(url);
-    const note = document.getElementById('notification');
-    if (note) {
-        note.classList.add('show');
-        setTimeout(() => note.classList.remove('show'), 2500);
-    }
+    
+    const btnElements = document.querySelectorAll('.btn-secondary');
+    btnElements.forEach(btn => {
+        if (btn.innerText.includes("Copiar")) {
+            const originalText = btn.innerText;
+            btn.innerText = "¡Enlace Copiado!";
+            btn.style.borderColor = "var(--accent)";
+            btn.style.color = "var(--accent)";
+            
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.borderColor = "var(--border)";
+                btn.style.color = "var(--text-main)";
+            }, 2000);
+        }
+    });
 }
 
 async function refreshTeamBuilder() {
@@ -228,7 +245,6 @@ function renderTeamBuilder(data) {
     container.innerHTML = html;
 }
 
-// --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
     if (!currentUser) {
         showView('view-auth');
@@ -242,4 +258,16 @@ document.addEventListener('DOMContentLoaded', () => {
             showView('view-home');
         }
     }
+
+    const handleEnterKey = (event) => {
+        if (event.key === 'Enter') {
+            handleAuth();
+        }
+    };
+    
+    const userPassInput = document.getElementById('auth-pass');
+    const userNameInput = document.getElementById('auth-user');
+    
+    if (userPassInput) userPassInput.addEventListener('keypress', handleEnterKey);
+    if (userNameInput) userNameInput.addEventListener('keypress', handleEnterKey);
 });

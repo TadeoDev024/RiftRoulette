@@ -6,29 +6,27 @@ using System.Threading.Tasks;
 using System;
 
 public class RiotDataService {
-    private readonly string _connectionString = "Server=ballast.proxy.rlwy.net;Port=38239;Database=railway;Uid=root;Pwd=moBtcnWVmvOzjozxaxNqkuxvyoXOWMbR;";
+    private readonly string _connectionString = "Server=mysql-1d3455f2-tadeo1234.h.aivencloud.com;Port=26769;Database=defaultdb;Uid=avnadmin;Pwd=AVNS_FriLoyIlLHKcqD-8qNK;SslMode=Required;";
 
     public async Task SyncRiotData() {
         using var client = new HttpClient();
         try {
             var versionJson = await client.GetStringAsync("https://ddragon.leagueoflegends.com/api/versions.json");
             string latestVersion = JArray.Parse(versionJson)[0].ToString();
-            
-            // CAMBIO CLAVE: Cambiamos es_ES por en_US
             var champsRaw = await client.GetStringAsync($"https://ddragon.leagueoflegends.com/cdn/{latestVersion}/data/en_US/champion.json");
             var champions = JObject.Parse(champsRaw)["data"];
 
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            // DICCIONARIO EN INGLÉS: Mucho más exacto, sin tildes ni géneros
+            // DICCIONARIO MAESTRO ULTRA-CURADO (EN INGLÉS)
             var tematicas = new Dictionary<string, string> {
                 { "project", "PROJECT" },
-                { "blood moon", "Blood Moon" },
+                { "blood moon", "Blood Moon" }, { "snow moon", "Snow Moon" },
                 { "dark star", "Dark Star" }, { "cosmic", "Cosmic" }, { "dark cosmic", "Dark Star" },
                 { "star guardian", "Star Guardian" }, { "star nemesis", "Star Guardian" }, { "pajama guardian", "Star Guardian" },
                 { "high noon", "High Noon" },
-                { "k/da", "K/DA" }, { "kda", "K/DA" }, { "true damage", "True Damage" }, { "pentakill", "Pentakill" }, { "heartsteel", "HEARTSTEEL" },
+                { "k/da", "K/DA" }, { "true damage", "True Damage" }, { "pentakill", "Pentakill" }, { "heartsteel", "HEARTSTEEL" },
                 { "arcade", "Arcade" }, { "battle boss", "Arcade" },
                 { "pool party", "Pool Party" }, { "ocean song", "Pool Party" },
                 { "spirit blossom", "Spirit Blossom" },
@@ -38,34 +36,33 @@ public class RiotDataService {
                 { "empyrean", "Empyrean" },
                 { "soul fighter", "Soul Fighter" },
                 { "inkshadow", "Inkshadow" },
-                { "snow moon", "Snow Moon" },
                 { "ashen", "Ashen Knights" },
                 { "mythmaker", "Mythmaker" },
-                { "lunar beast", "Lunar Revel" }, { "firecracker", "Lunar Revel" }, { "lunar wraith", "Lunar Revel" }, { "warring kingdoms", "Lunar Revel" },
+                { "lunar beast", "Lunar Revel" }, { "firecracker", "Lunar Revel" }, { "lunar wraith", "Lunar Revel" }, { "warring kingdoms", "Lunar Revel" }, { "dragon fist", "Lunar Revel" }, { "guqin", "Lunar Revel" }, { "jade fang", "Lunar Revel" }, { "panda", "Lunar Revel" }, { "coin emperor", "Lunar Revel" },
                 { "mecha kingdoms", "Mecha Kingdoms" },
                 { "crystal rose", "Crystal Rose" }, { "withered rose", "Crystal Rose" },
                 { "debonair", "Debonair" },
                 { "crime city", "Crime City" }, { "mafia", "Crime City" },
                 { "monster tamer", "Monster Tamers" },
                 { "fright night", "Fright Night" },
-                { "bewitching", "Halloween" }, { "zombie", "Halloween" }, { "count", "Halloween" }, { "nosferatu", "Halloween" }, { "pumpkin", "Halloween" }, { "trick or treat", "Halloween" },
-                { "winterblessed", "Winter" }, { "winter wonder", "Winter" }, { "snow day", "Winter" }, { "santa", "Winter" }, { "elf", "Winter" }, { "frost", "Winter" },
+                { "bewitching", "Halloween" }, { "zombie", "Halloween" }, { "count", "Halloween" }, { "nosferatu", "Halloween" }, { "pumpkin", "Halloween" }, { "trick or treat", "Halloween" }, { "franken", "Halloween" }, { "underworld", "Halloween" }, { "ravenborn", "Halloween" },
+                { "winterblessed", "Winter" }, { "winter wonder", "Winter" }, { "snow day", "Winter" }, { "santa", "Winter" }, { "elf", "Winter" }, { "frost", "Winter" }, { "ice toboggan", "Winter" }, { "reindeer", "Winter" }, { "nutcracko", "Winter" }, { "poro", "Winter" },
                 { "heartseeker", "Heartbreakers" }, { "sweetheart", "Heartbreakers" }, { "heartpiercer", "Heartbreakers" },
                 { "victorious", "Victorious" },
                 { "championship", "Championship / Worlds" }, { "worlds", "Championship / Worlds" },
-                { "conqueror", "Conqueror" },
+                { "conqueror", "Conqueror" }, { "challenger", "Conqueror" },
                 { "hextech", "Hextech" },
                 { "prestige", "Prestige Edition" },
                 { "arcane", "Arcane" },
                 { "astronaut", "Astronaut" },
-                { "bee", "Bees!" }, { "buzz", "Bees!" }, { "wasp", "Bees!" },
+                { "bee", "Bees!" }, { "buzz", "Bees!" }, { "wasp", "Bees!" }, { "meow", "April Fools" }, { "corgi", "April Fools" }, { "pug", "April Fools" }, { "pretty kitty", "April Fools" }, { "fuzz", "April Fools" },
+                { "definitely not", "April Fools" },
                 { "porcelain", "Porcelain" },
                 { "cafe cuties", "Cafe Cuties" },
                 { "chef", "Culinary Masters" }, { "baker", "Culinary Masters" }, { "butcher", "Culinary Masters" }, { "sushi", "Culinary Masters" }, { "pizza", "Culinary Masters" },
                 { "commando", "Commando" },
                 { "cyber pop", "Cyber Pop" },
-                { "definitely not", "April Fools" }, { "meow", "April Fools" }, { "pug", "April Fools" }, { "corgi", "April Fools" }, { "fuzz", "April Fools" }, { "pretty kitty", "April Fools" },
-                { "dragonmancer", "Dragonmancers" }, { "dragon slayer", "Dragon Slayers" }, { "dragon trainer", "Dragon Trainers" },
+                { "dragonmancer", "Dragonmancers" }, { "dragon slayer", "Dragon Slayers" }, { "dragon trainer", "Dragon Trainers" }, { "dragonslayer", "Dragon Slayers" },
                 { "dreadnova", "Dreadnova" },
                 { "shan hai", "Shan Hai Scrolls" },
                 { "fables", "Fables" },
@@ -76,15 +73,15 @@ public class RiotDataService {
                 { "omega squad", "Omega Squad" },
                 { "papercraft", "Papercraft" },
                 { "guardian of the sands", "Guardian of the Sands" }, { "pharaoh", "Guardian of the Sands" }, { "sandstorm", "Guardian of the Sands" },
-                { "bilgewater", "Bilgewater" }, { "pirate", "Bilgewater" }, { "buccaneer", "Bilgewater" }, { "corsair", "Bilgewater" }, { "captain", "Bilgewater" }, { "cutpurse", "Bilgewater" }, { "ironside", "Bilgewater" },
+                { "bilgewater", "Bilgewater" }, { "pirate", "Bilgewater" }, { "buccaneer", "Bilgewater" }, { "corsair", "Bilgewater" }, { "captain", "Bilgewater" }, { "cutpurse", "Bilgewater" }, { "ironside", "Bilgewater" }, { "rogue admiral", "Bilgewater" },
                 { "praetorian", "Praetorian" },
                 { "prehistoric", "Prehistoric" }, { "dino", "Prehistoric" },
                 { "program", "Program" },
                 { "riot", "Riot" },
                 { "secret agent", "Secret Agent" },
                 { "shockblade", "Shockblade" },
-                { "steel valkyrie", "Steel Valkyries" }, { "admiral", "Steel Valkyries" }, { "bullet angel", "Steel Valkyries" },
-                { "sugar rush", "Sugar Rush" }, { "candy", "Sugar Rush" }, { "lollipoppy", "Sugar Rush" }, { "bittersweet", "Sugar Rush" },
+                { "steel valkyrie", "Steel Valkyries" }, { "admiral", "Steel Valkyries" }, { "bullet angel", "Steel Valkyries" }, { "aether wing", "Steel Valkyries" },
+                { "sugar rush", "Sugar Rush" }, { "candy", "Sugar Rush" }, { "lollipoppy", "Sugar Rush" }, { "bittersweet", "Sugar Rush" }, { "dark candy", "Sugar Rush" },
                 { "toy", "Toys" }, { "doll", "Toys" }, { "ragdoll", "Toys" },
                 { "vandal", "Vandals" },
                 { "worldbreaker", "Worldbreaker" },
@@ -100,33 +97,34 @@ public class RiotDataService {
                 { "mecha", "Mecha" },
                 { "battlecast", "Battlecast" }, { "resistance", "Battlecast" },
                 { "blackfrost", "Blackfrost" },
-                { "infernal", "Infernal" }, { "volcanic", "Infernal" },
-                { "arclight", "Arclight" }, { "justicar", "Arclight" },
+                { "infernal", "Infernal" }, { "volcanic", "Infernal" }, { "obsidian", "Infernal" }, { "shadowfire", "Infernal" },
+                { "arclight", "Arclight" }, { "justicar", "Arclight" }, { "archduke", "Arclight" },
                 { "dawnbringer", "Night & Dawn" }, { "nightbringer", "Night & Dawn" },
                 { "crystalis", "Crystalis Motus" },
                 { "fnc ", "eSports" }, { "tpa ", "eSports" }, { "skt t1", "eSports" }, { "ssw ", "eSports" }, { "ig ", "eSports" }, { "fpx ", "eSports" }, { "dwg ", "eSports" }, { "edg ", "eSports" }, { "drx ", "eSports" }, { "t1 ", "eSports" },
                 { "super galaxy", "Super Galaxy" },
                 { "psyops", "PsyOps" },
-                { "god-king", "God-Kings" }, { "god king", "God-Kings" },
-                { "immortal journey", "Immortal Journey" }, { "divine sword", "Immortal Journey" }, { "enduring sword", "Immortal Journey" }, { "majestic empress", "Immortal Journey" }, { "splendid staff", "Immortal Journey" }, { "soaring sword", "Immortal Journey" },
+                { "god-king", "God-Kings" }, { "god king", "God-Kings" }, { "god fist", "God-Kings" }, { "god staff", "God-Kings" },
+                { "immortal journey", "Immortal Journey" }, { "divine sword", "Immortal Journey" }, { "enduring sword", "Immortal Journey" }, { "majestic empress", "Immortal Journey" }, { "splendid staff", "Immortal Journey" }, { "soaring sword", "Immortal Journey" }, { "valiant sword", "Immortal Journey" },
                 { "eternum", "Eternum" },
                 { "pulsefire", "Pulsefire" },
                 { "demacia vice", "Demacia Vice" },
-                { "striker", "Sports" }, { "goalkeeper", "Sports" }, { "sweeper", "Sports" }, { "dunkmaster", "Sports" }, { "playmaker", "Sports" },
+                { "striker", "Sports" }, { "goalkeeper", "Sports" }, { "sweeper", "Sports" }, { "dunkmaster", "Sports" }, { "playmaker", "Sports" }, { "all-star", "Sports" },
                 { "pax ", "PAX" },
-                { "rpg", "RPG" }, { "whitebeard", "RPG" }, { "lionheart", "RPG" }, { "braum lionheart", "RPG" }, { "gragas caskbreaker", "RPG" }, { "ryze whitebeard", "RPG" }, { "varus swiftbolt", "RPG" },
-                { "battleborn", "RPG" }
+                { "rpg", "RPG" }, { "whitebeard", "RPG" }, { "lionheart", "RPG" }, { "braum lionheart", "RPG" }, { "gragas caskbreaker", "RPG" }, { "ryze whitebeard", "RPG" }, { "varus swiftbolt", "RPG" }, { "battleborn", "RPG" },
+                { "omen of the dark", "Omen of the Dark" }, { "inquisitor", "Omen of the Dark" }, { "revenant", "Omen of the Dark" },
+                { "high command", "Noxus" }, { "noxian", "Noxus" },
+                { "freljord", "Freljord" }
             };
 
             foreach (var champProp in champions) {
-                string champId = champProp.First["id"].ToString();
-                string champName = champProp.First["name"].ToString();
+                string champId = champProp.First["id"].ToString(); 
+                string champName = champProp.First["name"].ToString(); 
                 string tags = champProp.First["tags"].ToString();
                 string linea = AsignarLinea(champId, tags);
 
-                await Task.Delay(25); // Evitar saturar API
+                await Task.Delay(20); 
 
-                // CAMBIO CLAVE: Cambiamos es_ES por en_US aquí también
                 var detailRaw = await client.GetStringAsync($"https://ddragon.leagueoflegends.com/cdn/{latestVersion}/data/en_US/champion/{champId}.json");
                 var skinData = JObject.Parse(detailRaw)["data"][champId]["skins"];
 
@@ -135,9 +133,9 @@ public class RiotDataService {
                     string skinIdRiot = skin["id"].ToString();
                     string skinNum = skin["num"].ToString();
 
-                    if (skinNum == "0" || skinNameRiot.ToLower() == "default") continue; // Filtrar aspectos base
+                    if (skinNum == "0" || skinNameRiot.ToLower() == "default") continue; 
 
-                    string tema = "Other / Unique"; // Ahora la categoría base también es en inglés
+                    string tema = "Other / Unique";
                     string skinNameLimpio = skinNameRiot.ToLower();
                     
                     foreach (var kw in tematicas) {
@@ -147,7 +145,7 @@ public class RiotDataService {
                         }
                     }
 
-                    await SaveSkinToDb(conn, skinIdRiot, skinNameRiot, champName, linea, tema);
+                    await SaveSkinToDb(conn, skinIdRiot, skinNameRiot, champName, champId, linea, tema);
                 }
             }
         } catch (Exception ex) { Console.WriteLine("ERROR SYNC: " + ex.Message); }
@@ -163,16 +161,13 @@ public class RiotDataService {
         };
 
         if (dictLineas.ContainsKey(champId)) return dictLineas[champId];
-
         if (tags.Contains("Marksman")) return "ADC";
         if (tags.Contains("Support")) return "Support";
-        if (tags.Contains("Assassin")) return "Mid";
-        if (tags.Contains("Mage")) return "Mid";
-        if (tags.Contains("Tank")) return "Top";
+        if (tags.Contains("Assassin") || tags.Contains("Mage")) return "Mid";
         return "Flex";
     }
 
-    private async Task SaveSkinToDb(MySqlConnection conn, string skinId, string nombre_skin, string campeon, string linea, string tema) {
+    private async Task SaveSkinToDb(MySqlConnection conn, string skinId, string nombre_skin, string campeon, string campeon_id, string linea, string tema) {
         int temaId;
         string queryTema = "INSERT IGNORE INTO Tematicas (nombre) VALUES (@tema); SELECT id_tematica FROM Tematicas WHERE nombre = @tema LIMIT 1;";
         using (var cmdTema = new MySqlCommand(queryTema, conn)) {
@@ -180,12 +175,13 @@ public class RiotDataService {
             temaId = Convert.ToInt32(await cmdTema.ExecuteScalarAsync());
         }
 
-        string querySkin = "INSERT IGNORE INTO Skins (id_skin_riot, id_tematica, nombre_skin, campeon, linea) VALUES (@sid, @tid, @nombre, @camp, @linea)";
+        string querySkin = "INSERT IGNORE INTO Skins (id_skin_riot, id_tematica, nombre_skin, campeon, campeon_id, linea) VALUES (@sid, @tid, @nombre, @camp, @camp_id, @linea)";
         using (var cmdSkin = new MySqlCommand(querySkin, conn)) {
             cmdSkin.Parameters.AddWithValue("@sid", skinId);
             cmdSkin.Parameters.AddWithValue("@tid", temaId);
             cmdSkin.Parameters.AddWithValue("@nombre", nombre_skin);
             cmdSkin.Parameters.AddWithValue("@camp", campeon);
+            cmdSkin.Parameters.AddWithValue("@camp_id", campeon_id);
             cmdSkin.Parameters.AddWithValue("@linea", linea);
             await cmdSkin.ExecuteNonQueryAsync();
         }

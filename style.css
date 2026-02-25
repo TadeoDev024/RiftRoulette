@@ -370,7 +370,8 @@ input:focus { border-color: var(--accent); }
     padding: 0.8rem 1.5rem;
     border-radius: 8px;
     cursor: pointer;
-    margin-top: 1.5rem;
+    /* AUMENTAMOS EL MARGEN SUPERIOR AQUÍ */
+    margin-top: 2.5rem; 
     width: 100%;
     font-size: 0.9rem;
     font-weight: 600;
@@ -391,4 +392,8 @@ input:focus { border-color: var(--accent); }
 .nav-links .logout-link:hover {
     color: #ff6b6b;
     text-shadow: 0 0 10px rgba(255, 74, 74, 0.4);
+}
+/* Separar el botón de Crear Nuevo Equipo del texto */
+.home-card .btn-main {
+    margin-top: 2rem; /* Puedes subir este número a 2.5rem o 3rem si lo quieres más abajo */
 }
