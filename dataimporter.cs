@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 using System;
 
 public class RiotDataService {
-    private readonly string _connectionString = "Server=mysql-1d3455f2-tadeo1234.h.aivencloud.com;Port=26769;Database=defaultdb;Uid=avnadmin;Pwd=AVNS_FriLoyIlLHKcqD-8qNK;SslMode=Required;";
-
-    public async Task SyncRiotData() {
+    // Lee la contraseña secreta del servidor de Render
+    private readonly string _connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") ?? "Server=HOST_OCULTO;Port=1234;Database=defaultdb;Uid=avnadmin;Pwd=PASSWORD_OCULTA;SslMode=Required;";    public async Task SyncRiotData() {
         using var client = new HttpClient();
         try {
             var versionJson = await client.GetStringAsync("https://ddragon.leagueoflegends.com/api/versions.json");
