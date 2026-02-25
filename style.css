@@ -397,3 +397,19 @@ input:focus { border-color: var(--accent); }
 .home-card .btn-main {
     margin-top: 2rem; /* Puedes subir este número a 2.5rem o 3rem si lo quieres más abajo */
 }
+/* Esto es lo que hace que las páginas se escondan */
+.view {
+    display: none; 
+}
+
+/* Esto es lo que hace que solo la página activa se muestre */
+.view.active {
+    display: block !important;
+}
+
+/* Aseguramos que el contenedor no rompa el diseño */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
