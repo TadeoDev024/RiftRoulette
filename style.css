@@ -363,3 +363,32 @@ input:focus { border-color: var(--accent); }
     font-style: italic;
     padding: 20px 0;
 }
+.btn-switch {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    width: 100%;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-switch:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(0, 207, 212, 0.05);
+}
+
+/* Botón de Cerrar Sesión en rojo */
+.nav-links .logout-link {
+    color: #ff4a4a;
+}
+
+.nav-links .logout-link:hover {
+    color: #ff6b6b;
+    text-shadow: 0 0 10px rgba(255, 74, 74, 0.4);
+}

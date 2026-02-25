@@ -3,24 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RiftRoulette | Premium Edition</title>
+    <title>MatchMySkin | Team Builder</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="notification" class="notification">¡Copiado al portapapeles!</div>
-
     <nav class="navbar" id="main-nav" style="display: none;">
-        <div class="nav-logo" onclick="showView('view-home')">RIFT<span>ROULETTE</span></div>
+        <div class="nav-logo" onclick="showView('view-home')">MATCH<span>MYSKIN</span></div>
         <ul class="nav-links">
             <li><a href="#" onclick="showView('view-home')">Inicio</a></li>
             <li><a href="#" onclick="showView('view-inventory')">Mis Skins</a></li>
-            <li class="profile-dropdown">
-                <button class="profile-btn">Perfil ▼</button>
-                <div class="dropdown-content">
-                    <a href="#" onclick="logout()">Cerrar Sesión</a>
-                </div>
-            </li>
+            <li><a href="#" onclick="logout()" class="logout-link">Cerrar Sesión</a></li>
         </ul>
     </nav>
 
@@ -32,22 +25,22 @@
                 <input type="password" id="auth-pass" placeholder="Contraseña">
                 <button class="btn-main" onclick="handleAuth()">Ingresar</button>
             </div>
-            <p onclick="toggleAuthMode()" id="auth-switch">¿No tienes cuenta? Regístrate</p>
+            <button onclick="toggleAuthMode()" id="auth-switch" class="btn-switch">¿No tienes cuenta? Regístrate</button>
         </div>
     </section>
 
     <section id="view-home" class="view container">
         <div class="home-card">
-            <h1>¿Listo para la partida?</h1>
-            <p>Crea una sala e invita a tus amigos para decidir qué temática jugarán.</p>
-            <button class="btn-main large" onclick="createNewLobby()">CREAR NUEVA SALA</button>
+            <h1>Descubre tu Sinergia</h1>
+            <p>Crea una sala e invita a tus amigos para descubrir qué composiciones temáticas pueden armar juntos.</p>
+            <button class="btn-main large" onclick="createNewLobby()">CREAR NUEVO EQUIPO</button>
         </div>
     </section>
 
     <section id="view-inventory" class="view container">
         <div class="inventory-header">
             <h2>Mi Colección</h2>
-            <p>Marca las skins que posees en tu cuenta para que la ruleta pueda calcular las coincidencias.</p>
+            <p>Marca las skins que posees para que el sistema encuentre sinergias con tu equipo en tiempo real.</p>
         </div>
         <div id="themes-container" class="themes-grid">
             </div>
@@ -58,15 +51,14 @@
             <div class="header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2>SALA: <span id="display-code" class="accent">#-----</span></h2>
                 <div>
-                    <button class="btn-secondary" onclick="copyInviteLink()" style="margin-right: 10px;">Copiar Invitación</button>
-                    <button class="btn-main" onclick="refreshTeamBuilder()">Actualizar Equipos</button>
+                    <button class="btn-secondary" onclick="copyInviteLink()">Copiar Invitación</button>
                 </div>
             </div>
             
             <div class="team-builder-wrapper">
                 <div class="tb-header">
-                    <h3>Composiciones Disponibles</h3>
-                    <p>Las siguientes temáticas tienen skins disponibles entre los jugadores de la sala.</p>
+                    <h3>Sinergias Disponibles</h3>
+                    <p>Las siguientes temáticas tienen skins en común entre los jugadores de esta sala.</p>
                 </div>
                 
                 <div id="team-results" class="team-results-container">
