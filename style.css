@@ -128,36 +128,53 @@ input:focus { border-color: var(--accent); }
 
 .skin-card:hover { border-color: var(--accent); transform: scale(1.03); }
 
-.skin-card.owned { border-color: var(--gold); }
+/* --- ESTADO ADQUIRIDO (OWNED) --- */
+.skin-card.owned { 
+    border-color: var(--gold); 
+}
+
 .skin-card.owned::after {
-    content: 'Poseída';
+    content: 'OWNED'; /* Cambiado a inglés */
     position: absolute;
     top: 10px;
     right: 10px;
     background: var(--gold);
     color: black;
-    font-size: 0.6rem;
-    padding: 2px 8px;
+    font-size: 0.7rem;
+    padding: 3px 10px;
     border-radius: 20px;
     font-weight: 900;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
+/* --- LÓGICA DE BLANCO Y NEGRO / COLOR --- */
 .skin-img-wrapper {
     width: 100%;
     aspect-ratio: 16 / 9;
     overflow: hidden;
+    background-color: #000; /* Fondo negro por si la imagen tarda en cargar */
 }
 
 .skin-img-wrapper img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: grayscale(0.5);
+    /* POR DEFECTO: Blanco y negro (100%) y un poco oscurecido (0.5) */
+    filter: grayscale(100%) brightness(0.5); 
     transition: var(--transition);
 }
 
-.skin-card:hover img { filter: grayscale(0); }
-.skin-card.owned img { filter: grayscale(0); }
+/* Al pasar el mouse por encima (Hover), recupera el color para invitar a dar clic */
+.skin-card:hover img { 
+    filter: grayscale(0%) brightness(1); 
+    transform: scale(1.05); /* Pequeño zoom 3D */
+}
+
+/* Cuando le das clic y es tuya (OWNED), se queda a todo color de forma permanente */
+.skin-card.owned img { 
+    filter: grayscale(0%) brightness(1); 
+}
 
 .skin-name {
     padding: 1rem;
