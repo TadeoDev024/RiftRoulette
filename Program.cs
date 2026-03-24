@@ -1,54 +1,48 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// 1. Servicios básicos
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-
-// 2. Configuración de CORS
-builder.Services.AddCors(options =>
+namespace RiftRoulette
 {
-    options.AddPolicy("AllowAll", policy =>
+    public class Program
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
 
-// 3. Autenticación JWT 
-var key = Encoding.ASCII.GetBytes("ESTA_ES_UNA_LLAVE_SUPER_SECRETA_Y_LARGA_12345");
-builder.Services.AddAuthentication(x =>
-{
-    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(x =>
-{
-    x.RequireHttpsMetadata = false;
-    x.SaveToken = true;
-    x.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = false,
-        ValidateAudience = false
-    };
-});
+            // 1. Añadir Controladores
+            builder.Services.AddControllers();
 
-var app = builder.Build();
+            // 2. Configurar CORS (Permitir todo para pruebas)
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.SetIsOriginAllowed(_ => true) // Permite localhost o Vercel
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials(); // Importante
+                });
+            });
 
-// 4. PIPELINE DE EJECUCIÓN (EL ORDEN CORRECTO)
-app.UseRouting();
+            var app = builder.Build();
 
-// ¡CORS DEBE IR DESPUÉS DE ROUTING Y ANTES DE AUTH/CONTROLLERS!
-app.UseCors("AllowAll");
+            // 3. PIPELINE DE EJECUCIÓN (EL ORDEN ES VITAL)
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
 
-app.UseAuthentication();
-app.UseAuthorization();
+            app.UseRouting();
 
-app.MapControllers();
+            // CORS siempre va entre Routing y Endpoints/Controllers
+            app.UseCors("AllowAll");
 
-app.Run();
+            app.UseAuthorization();
+
+            app.MapControllers();
+
+            app.Run();
+        }
+    }
+}
