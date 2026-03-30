@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;

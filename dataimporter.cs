@@ -1,5 +1,5 @@
 using Newtonsoft.Json.Linq;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using RiftRoulette.Models;
 
 namespace RiftRoulette.Logic {
