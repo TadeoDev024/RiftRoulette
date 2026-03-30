@@ -14,11 +14,21 @@ function showView(viewId) {
 
     if (viewId === 'view-inventory') loadInventory();
     
-    // Si salimos de la sala, dejamos de pedir actualizaciones
-    if (viewId !== 'view-lobby' && lobbyInterval) {
-        clearInterval(lobbyInterval);
-        lobbyInterval = null;
-        currentLobbyCode = null;
+    // LÓGICA AL SALIR DE LA SALA
+    if (viewId !== 'view-lobby') {
+        // 1. Detenemos las actualizaciones automáticas
+        if (lobbyInterval) {
+            clearInterval(lobbyInterval);
+            lobbyInterval = null;
+            currentLobbyCode = null;
+        }
+        
+        // 2. Limpiamos la URL (borramos el ?join=) sin recargar la página
+        const currentUrl = new URL(window.location);
+        if (currentUrl.searchParams.has('join')) {
+            currentUrl.searchParams.delete('join');
+            window.history.replaceState({}, document.title, currentUrl.toString());
+        }
     }
 }
 
