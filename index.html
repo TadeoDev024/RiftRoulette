@@ -32,8 +32,16 @@
     <section id="view-home" class="view container">
         <div class="home-card">
             <h1>Descubre tu Sinergia</h1>
-            <p>Crea una sala e invita a tus amigos para armar equipos temáticos.</p>
-            <button class="btn-main large" onclick="createNewLobby()">CREAR NUEVO EQUIPO</button>
+            <p>Crea una sala e invita a tus amigos o únete con un código.</p>
+            
+            <div class="lobby-actions-container" style="display: flex; gap: 15px; margin-top: 20px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn-main large" onclick="createNewLobby()">CREAR NUEVA SALA</button>
+                
+                <div class="join-lobby-box" style="display: flex; gap: 10px;">
+                    <input type="text" id="lobby-code-input" placeholder="Código (Ej: A4X9P2)" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; text-transform: uppercase; font-weight: bold; width: 150px;">
+                    <button class="btn-secondary" style="padding: 10px 20px;" onclick="joinLobbyFromInput()">Unirse</button>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -47,7 +55,7 @@
 
     <section id="view-lobby" class="view container">
         <div class="lobby-card">
-            <div class="header-row">
+            <div class="header-row" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>SALA: <span id="display-code" class="accent">#-----</span></h2>
                 <button class="btn-secondary" onclick="copyInviteLink()">Copiar Invitación</button>
             </div>

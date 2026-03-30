@@ -64,16 +64,15 @@ async function handleAuth() {
             localStorage.setItem('user', JSON.stringify(currentUser));
             showView('view-home');
         } else {
-            // Manejo de errores controlados (400, 401, etc)
             const errorData = await res.json().catch(() => ({ message: "Error desconocido" }));
             alert(errorData.message || "Error de credenciales");
         }
     } catch (e) {
-        // Este error ocurre cuando el servidor está en "Cold Start"
         console.error(e);
         alert("El servidor está despertando. Por favor, intenta de nuevo en 20 segundos.");
     }
 }
+
 function logout() {
     localStorage.clear();
     location.reload();
@@ -162,6 +161,20 @@ async function createNewLobby() {
     } catch (e) { alert("Error al crear sala"); }
 }
 
+// NUEVA FUNCIÓN: Unirse desde la caja de texto
+async function joinLobbyFromInput() {
+    const input = document.getElementById('lobby-code-input');
+    if (!input) return;
+    
+    const code = input.value.trim().toUpperCase();
+    
+    if (!code) {
+        alert("Por favor, ingresa un código de sala válido.");
+        return;
+    }
+    await joinLobbyRequest(code);
+}
+
 async function joinLobbyRequest(code) {
     if (!currentUser) return;
     try {
@@ -177,11 +190,24 @@ async function joinLobbyRequest(code) {
             showView('view-lobby');
             refreshTeamBuilder();
             if (lobbyInterval) clearInterval(lobbyInterval);
-            lobbyInterval = setInterval(refreshTeamBuilder, 3000);
+            lobbyInterval = setInterval(refreshTeamBuilder, 3000); // Actualiza cada 3 segundos
         } else {
-            alert("Sala inexistente o llena.");
+            const data = await res.json();
+            alert(data.message || "Sala inexistente o llena.");
         }
     } catch (e) { console.error(e); }
+}
+
+// NUEVA FUNCIÓN: Copiar el código al portapapeles
+function copyInviteLink() {
+    if (!currentLobbyCode) return;
+    // Crea una URL para que el amigo entre directo: tusitio.com/?join=A4X9P2
+    const inviteUrl = `${window.location.origin}${window.location.pathname}?join=${currentLobbyCode}`;
+    navigator.clipboard.writeText(inviteUrl).then(() => {
+        alert(`¡Enlace copiado! Envíalo a tus amigos:\n${inviteUrl}`);
+    }).catch(() => {
+        alert(`Comparte este código con tus amigos: ${currentLobbyCode}`);
+    });
 }
 
 async function refreshTeamBuilder() {
@@ -196,7 +222,7 @@ async function refreshTeamBuilder() {
 function renderTeamBuilder(data) {
     const container = document.getElementById('team-results');
     if (Object.keys(data).length === 0) {
-        container.innerHTML = "<p>Esperando jugadores...</p>";
+        container.innerHTML = "<p>Esperando jugadores o skins en común...</p>";
         return;
     }
     let html = "";
@@ -220,6 +246,7 @@ function renderTeamBuilder(data) {
 document.addEventListener('DOMContentLoaded', () => {
     if (!currentUser) showView('view-auth');
     else {
+        // Magia: Si el amigo entró con el link (?join=CODIGO), lo mete directo a la sala
         const joinCode = new URLSearchParams(window.location.search).get('join');
         joinCode ? joinLobbyRequest(joinCode) : showView('view-home');
     }
