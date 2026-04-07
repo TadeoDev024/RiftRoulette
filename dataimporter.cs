@@ -97,7 +97,9 @@ public class RiotDataService {
                 
                 // Otras Líneas Menores
                 { "eternum", "Eternum" }, { "heavy metal", "Heavy Metal" }, { "lancer", "Lanceros" },
-                { "resistance", "Resistencia" }, { "overlord", "Soberanos" }
+                { "resistance", "Resistencia" }, { "overlord", "Soberanos"}, { "Arcanal", "Arcana" }, { "coven", "Aquelarre" }, { "dawnbringer", "Portadores" }, { "nightbringer", "Portadores" },
+                { "soulstealer", "Ladrones de Almas" }, { "sentinel", "Centinelas de la Luz" }, { "ruined", "Arruinado" },
+                { "vandal", "Vándalos" }, { "marauder", "Merodeadores" }, { "warden", "Celadores" }
             };
 
             foreach (var champProp in champions) {
