@@ -76,41 +76,42 @@ namespace RiftRoulette.Controllers
         }
 
         [HttpGet("skins/{userId}")]
-        public async Task<IActionResult> GetSkins(int userId)
+public async Task<IActionResult> GetSkins(int userId)
+{
+    var list = new List<object>();
+    try
+    {
+        using var conn = new MySqlConnection(_connectionString);
+        await conn.OpenAsync();
+        
+        // CORRECCIÓN: us.id_skin_riot = s.id_skin_riot
+        string query = @"
+            SELECT s.id_skin_riot, s.nombre_skin, s.campeon, s.campeon_id, t.nombre as tematica, 
+            IF(us.id_usuario IS NULL, 0, 1) as poseida
+            FROM Skins s
+            JOIN Tematicas t ON s.id_tematica = t.id_tematica
+            LEFT JOIN Usuario_Skins us ON us.id_skin_riot = s.id_skin_riot AND us.id_usuario = @uid";
+
+        using var cmd = new MySqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("@uid", userId);
+        using var reader = await cmd.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
         {
-            var list = new List<object>();
-            try
+            list.Add(new
             {
-                using var conn = new MySqlConnection(_connectionString);
-                await conn.OpenAsync();
-                string query = @"
-                    SELECT s.id_skin_riot, s.nombre_skin, s.campeon, s.campeon_id, t.nombre as tematica, 
-                    IF(us.id_usuario IS NULL, 0, 1) as poseida
-                    FROM Skins s
-                    JOIN Tematicas t ON s.id_tematica = t.id_tematica
-                    LEFT JOIN Usuario_Skins us ON s.id_skin_riot = s.id_skin_riot AND us.id_usuario = @uid";
-
-                using var cmd = new MySqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@uid", userId);
-                using var reader = await cmd.ExecuteReaderAsync();
-
-                while (await reader.ReadAsync())
-                {
-                    list.Add(new
-                    {
-                        id = reader["id_skin_riot"].ToString(),
-                        nombre = reader["nombre_skin"].ToString(),
-                        campeon = reader["campeon"].ToString(),
-                        campeonId = reader["campeon_id"].ToString(),
-                        tema = reader["tematica"].ToString(),
-                        owned = Convert.ToBoolean(reader["poseida"])
-                    });
-                }
-                return Ok(list);
-            }
-            catch (Exception ex) { return StatusCode(500, ex.Message); }
+                id = reader["id_skin_riot"].ToString(),
+                nombre = reader["nombre_skin"].ToString(),
+                campeon = reader["campeon"].ToString(),
+                campeonId = reader["campeon_id"].ToString(),
+                tema = reader["tematica"].ToString(),
+                owned = Convert.ToBoolean(reader["poseida"])
+            });
         }
-
+        return Ok(list);
+    }
+    catch (Exception ex) { return StatusCode(500, ex.Message); }
+}
         [HttpPost("inventory/toggle")]
         public async Task<IActionResult> ToggleSkin([FromBody] JsonElement data)
         {
