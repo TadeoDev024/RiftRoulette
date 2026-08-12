@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using MySqlConnector;
 using RiftRoulette.Models;
+using RiftRoulette.Helpers;
 using System.Threading.Tasks;
 using System;
 
@@ -13,13 +14,19 @@ using System;
 public class AuthController : ControllerBase 
 {
     private readonly string _connectionString;
+    private readonly string _jwtSecret;
 
     public AuthController(IConfiguration configuration) {
-        _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
+        _connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") 
+                            ?? configuration.GetConnectionString("DefaultConnection") ?? "";
+        _jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") ?? "ESTA_ES_UNA_LLAVE_SUPER_SECRETA_Y_LARGA_12345";
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] LoginRequest req) {
+        if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
+            return BadRequest("Usuario y contraseña son obligatorios.");
+
         try {
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
@@ -32,15 +39,16 @@ public class AuthController : ControllerBase
                 if (exists > 0) return BadRequest("El nombre de usuario ya está en uso.");
             }
 
-            // Crear el nuevo usuario
+            // Hashear password y crear usuario
+            string hash = AuthHelper.HashPassword(req.Password);
             string query = "INSERT INTO Usuarios (username, password) VALUES (@user, @pass); SELECT LAST_INSERT_ID();";
             using var cmd = new MySqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@user", req.Username);
-            cmd.Parameters.AddWithValue("@pass", req.Password); 
+            cmd.Parameters.AddWithValue("@pass", hash);
             
             int userId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             
-            var token = GenerateJwtToken(req.Username);
+            var token = AuthHelper.GenerateJwtToken(req.Username, userId, _jwtSecret);
             return Ok(new { token = token, username = req.Username, userId = userId });
 
         } catch (Exception ex) { return StatusCode(500, "Error en la base de datos: " + ex.Message); }
@@ -52,32 +60,22 @@ public class AuthController : ControllerBase
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            // Buscar el usuario en la base de datos
-            string query = "SELECT id_usuario FROM Usuarios WHERE username = @user AND password = @pass";
+            // Buscar usuario y verificar hash
+            string query = "SELECT id_usuario, password FROM Usuarios WHERE username = @user";
             using var cmd = new MySqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@user", req.Username);
-            cmd.Parameters.AddWithValue("@pass", req.Password);
             
-            var result = await cmd.ExecuteScalarAsync();
-            
-            if (result != null) {
-                int userId = Convert.ToInt32(result);
-                return Ok(new { token = GenerateJwtToken(req.Username), username = req.Username, userId = userId });
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync()) {
+                int userId = reader.GetInt32(reader.GetOrdinal("id_usuario"));
+                string passwordHash = reader.GetString(reader.GetOrdinal("password"));
+                if (AuthHelper.VerifyPassword(req.Password, passwordHash)) {
+                    var token = AuthHelper.GenerateJwtToken(req.Username, userId, _jwtSecret);
+                    return Ok(new { token = token, username = req.Username, userId = userId });
+                }
             }
 
             return Unauthorized("Usuario o contraseña incorrectos.");
         } catch (Exception ex) { return StatusCode(500, "Error en la base de datos: " + ex.Message); }
-    }
-
-    private string GenerateJwtToken(string username) {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes("ESTA_ES_UNA_LLAVE_SUPER_SECRETA_Y_LARGA_12345");
-        var tokenDescriptor = new SecurityTokenDescriptor {
-            Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) }),
-            Expires = DateTime.UtcNow.AddDays(7),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
     }
 }

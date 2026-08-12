@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
-using MySqlConnector; // LIBRERÍA NUEVA: Evita el error CS0246 en Render
+using MySqlConnector;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,9 +12,9 @@ namespace RiftRoulette.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]  // Todos los métodos requieren token
     public class LobbyController : ControllerBase
     {
-        // Usamos ConcurrentDictionary para que las salas sean totalmente independientes en memoria
         private static readonly ConcurrentDictionary<string, List<PlayerDto>> Lobbies = new();
         private readonly string _connectionString;
 
@@ -24,7 +25,6 @@ namespace RiftRoulette.Controllers
 
         [HttpPost("create")]
         public IActionResult CreateLobby() {
-            // Genera un código único de 6 caracteres
             string code = System.Guid.NewGuid().ToString().Substring(0, 6).ToUpper();
             Lobbies[code] = new List<PlayerDto>();
             return Ok(new { lobbyCode = code });
@@ -32,7 +32,7 @@ namespace RiftRoulette.Controllers
 
         [HttpPost("join/{code}")]
         public IActionResult JoinLobby(string code, [FromBody] PlayerDto player) {
-            code = code.ToUpper(); // Aseguramos que siempre lea en mayúsculas
+            code = code.ToUpper();
             
             if (!Lobbies.ContainsKey(code)) return NotFound(new { message = "Sala no encontrada" });
             
@@ -52,23 +52,32 @@ namespace RiftRoulette.Controllers
             if (!Lobbies.TryGetValue(code, out var players) || players.Count == 0) 
                 return Ok(new { });
 
-            string userIds = string.Join(",", players.Select(p => p.UserId));
             var teamBuilderData = new Dictionary<string, Dictionary<string, List<object>>>();
 
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            // La query busca las skins de los usuarios que están registrados en ESTA sala específicamente
+            // Construir parámetros para la cláusula IN
+            var parameters = new List<MySqlParameter>();
+            var paramNames = new List<string>();
+            for (int i = 0; i < players.Count; i++)
+            {
+                string pName = $"@uid{i}";
+                paramNames.Add(pName);
+                parameters.Add(new MySqlParameter(pName, players[i].UserId));
+            }
+
             string query = $@"
                 SELECT t.nombre as tematica, s.linea, s.campeon, s.nombre_skin, u.username
                 FROM Usuario_Skins us
                 JOIN Skins s ON us.id_skin_riot = s.id_skin_riot
                 JOIN Tematicas t ON s.id_tematica = t.id_tematica
                 JOIN Usuarios u ON us.id_usuario = u.id_usuario
-                WHERE us.id_usuario IN ({userIds})
+                WHERE us.id_usuario IN ({string.Join(",", paramNames)})
                 ORDER BY t.nombre, s.linea, s.campeon";
 
             using var cmd = new MySqlCommand(query, conn);
+            cmd.Parameters.AddRange(parameters.ToArray());
             using var reader = await cmd.ExecuteReaderAsync();
 
             while (await reader.ReadAsync()) {

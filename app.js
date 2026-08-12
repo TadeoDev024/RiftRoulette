@@ -3,6 +3,17 @@ let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 let currentLobbyCode = null;
 let lobbyInterval = null;
 
+// Helper para incluir token JWT en las peticiones
+function fetchAuth(url, options = {}) {
+    const token = localStorage.getItem('token');
+    options.headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+    return fetch(url, options);
+}
+
 // NAVEGACIÓN ENTRE VISTAS
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -16,14 +27,12 @@ function showView(viewId) {
     
     // LÓGICA AL SALIR DE LA SALA
     if (viewId !== 'view-lobby') {
-        // 1. Detenemos las actualizaciones automáticas
         if (lobbyInterval) {
             clearInterval(lobbyInterval);
             lobbyInterval = null;
             currentLobbyCode = null;
         }
         
-        // 2. Limpiamos la URL (borramos el ?join=) sin recargar la página
         const currentUrl = new URL(window.location);
         if (currentUrl.searchParams.has('join')) {
             currentUrl.searchParams.delete('join');
@@ -62,9 +71,8 @@ async function handleAuth() {
     if (!user || !pass) return alert("Completa los campos");
 
     try {
-        const res = await fetch(`${API_URL}/Rift/${endpoint}`, {
+        const res = await fetchAuth(`${API_URL}/Rift/${endpoint}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ Username: user, Password: pass })
         });
 
@@ -72,6 +80,7 @@ async function handleAuth() {
             const data = await res.json();
             currentUser = { userId: data.userId, username: user };
             localStorage.setItem('user', JSON.stringify(currentUser));
+            localStorage.setItem('token', data.token);
             showView('view-home');
         } else {
             const errorData = await res.json().catch(() => ({ message: "Error desconocido" }));
@@ -93,7 +102,7 @@ async function loadInventory() {
     const container = document.getElementById('themes-container');
     container.innerHTML = "<p>Cargando colección...</p>";
     try {
-        const response = await fetch(`${API_URL}/Rift/skins/${currentUser.userId}`);
+        const response = await fetchAuth(`${API_URL}/Rift/skins/${currentUser.userId}`);
         const skins = await response.json();
         renderInventory(skins);
     } catch (error) {
@@ -153,9 +162,8 @@ function filterSkins() {
 async function toggleSkin(skinId, element) {
     const isNowOwned = !element.classList.contains('owned');
     try {
-        const res = await fetch(`${API_URL}/Rift/inventory/toggle`, {
+        const res = await fetchAuth(`${API_URL}/Rift/inventory/toggle`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: currentUser.userId, skinId: skinId, owned: isNowOwned })
         });
         if (res.ok) element.classList.toggle('owned');
@@ -165,13 +173,12 @@ async function toggleSkin(skinId, element) {
 // SALAS Y LOBBY
 async function createNewLobby() {
     try {
-        const res = await fetch(`${API_URL}/Lobby/create`, { method: 'POST' });
+        const res = await fetchAuth(`${API_URL}/Lobby/create`, { method: 'POST' });
         const data = await res.json();
         joinLobbyRequest(data.lobbyCode);
     } catch (e) { alert("Error al crear sala"); }
 }
 
-// NUEVA FUNCIÓN: Unirse desde la caja de texto
 async function joinLobbyFromInput() {
     const input = document.getElementById('lobby-code-input');
     if (!input) return;
@@ -188,9 +195,8 @@ async function joinLobbyFromInput() {
 async function joinLobbyRequest(code) {
     if (!currentUser) return;
     try {
-        const res = await fetch(`${API_URL}/Lobby/join/${code}`, {
+        const res = await fetchAuth(`${API_URL}/Lobby/join/${code}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ UserId: currentUser.userId, Username: currentUser.username })
         });
 
@@ -200,7 +206,7 @@ async function joinLobbyRequest(code) {
             showView('view-lobby');
             refreshTeamBuilder();
             if (lobbyInterval) clearInterval(lobbyInterval);
-            lobbyInterval = setInterval(refreshTeamBuilder, 3000); // Actualiza cada 3 segundos
+            lobbyInterval = setInterval(refreshTeamBuilder, 3000);
         } else {
             const data = await res.json();
             alert(data.message || "Sala inexistente o llena.");
@@ -208,10 +214,8 @@ async function joinLobbyRequest(code) {
     } catch (e) { console.error(e); }
 }
 
-// NUEVA FUNCIÓN: Copiar el código al portapapeles
 function copyInviteLink() {
     if (!currentLobbyCode) return;
-    // Crea una URL para que el amigo entre directo: tusitio.com/?join=A4X9P2
     const inviteUrl = `${window.location.origin}${window.location.pathname}?join=${currentLobbyCode}`;
     navigator.clipboard.writeText(inviteUrl).then(() => {
         alert(`¡Enlace copiado! Envíalo a tus amigos:\n${inviteUrl}`);
@@ -223,7 +227,7 @@ function copyInviteLink() {
 async function refreshTeamBuilder() {
     if (!currentLobbyCode) return;
     try {
-        const res = await fetch(`${API_URL}/Lobby/teambuilder/${currentLobbyCode}`);
+        const res = await fetchAuth(`${API_URL}/Lobby/teambuilder/${currentLobbyCode}`);
         const data = await res.json();
         renderTeamBuilder(data);
     } catch (e) { console.error(e); }
@@ -256,7 +260,6 @@ function renderTeamBuilder(data) {
 document.addEventListener('DOMContentLoaded', () => {
     if (!currentUser) showView('view-auth');
     else {
-        // Magia: Si el amigo entró con el link (?join=CODIGO), lo mete directo a la sala
         const joinCode = new URLSearchParams(window.location.search).get('join');
         joinCode ? joinLobbyRequest(joinCode) : showView('view-home');
     }
