@@ -246,28 +246,46 @@ async function joinLobbyFromInput() {
 async function joinLobbyRequest(code) {
     if (!currentUser) return;
     showSpinner();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
         const res = await fetchAuth(`${API_URL}/Lobby/join/${code}`, {
             method: 'POST',
-            body: JSON.stringify({ UserId: currentUser.userId, Username: currentUser.username })
+            body: JSON.stringify({ UserId: currentUser.userId, Username: currentUser.username }),
+            signal: controller.signal
         });
 
         if (res.ok) {
             currentLobbyCode = code;
             document.getElementById('display-code').innerText = `#${code}`;
             showView('view-lobby');
-            await refreshTeamBuilder();
+            
+            // Limpiar intervalo anterior si existe
             if (lobbyInterval) clearInterval(lobbyInterval);
-            lobbyInterval = setInterval(refreshTeamBuilder, 5000); // actualiza cada 5s
+            
+            // Llamada inicial para cargar datos
+            await refreshTeamBuilder();
+            
+            // Configurar polling con intervalo fijo
+            lobbyInterval = setInterval(() => {
+                refreshTeamBuilder();
+            }, 5000);
+            
             showToast("Unido a la sala");
         } else {
-            const data = await res.json();
-            showToast(data.message || "Sala inexistente o llena", "error");
+            const data = await res.json().catch(() => ({}));
+            showToast(data.message || "Sala inexistente o llena", 'error');
         }
-    } catch (e) {
-        console.error(e);
-        showToast("Error de conexión", "error");
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            showToast('El servidor tardó demasiado en responder', 'error');
+        } else {
+            console.error(err);
+            showToast('Error de conexión', 'error');
+        }
     } finally {
+        clearTimeout(timeoutId);
         hideSpinner();
     }
 }
@@ -283,30 +301,56 @@ function copyInviteLink() {
 }
 
 async function refreshTeamBuilder() {
-    if (!currentLobbyCode) return;
+    if (!currentLobbyCode || isRefreshing) return; // Evita solapamientos
+
+    isRefreshing = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10s
+
     try {
-        const res = await fetchAuth(`${API_URL}/Lobby/teambuilder/${currentLobbyCode}`);
+        const res = await fetchAuth(`${API_URL}/Lobby/teambuilder/${currentLobbyCode}`, {
+            signal: controller.signal
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            showToast(errorData.message || `Error ${res.status} al cargar datos`, 'error');
+            return;
+        }
+
         const data = await res.json();
         renderTeamBuilder(data);
-        // También cargamos la sugerencia
-        await loadSuggestion();
-    } catch (e) {
-        console.error(e);
+
+        // Cargar sugerencia solo si existe el endpoint; si falla no interrumpe
+        await loadSuggestion().catch(err => console.warn('Sugerencia no disponible:', err));
+
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            showToast('El servidor está tardando demasiado. Reintentando...', 'error');
+        } else {
+            console.error(err);
+            showToast('Error de conexión al actualizar la sala', 'error');
+        }
+    } finally {
+        clearTimeout(timeoutId);
+        isRefreshing = false;
     }
 }
 
 async function loadSuggestion() {
     if (!currentLobbyCode) return;
+
     try {
         const res = await fetchAuth(`${API_URL}/Lobby/teambuilder/${currentLobbyCode}/suggest`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
         const data = await res.json();
         currentSuggestion = data;
         renderSuggestion(data);
     } catch (e) {
-        console.error(e);
+        // Silencioso: no queremos que un error en sugerencia rompa la vista principal
+        console.warn('No se pudo obtener sugerencia:', e);
     }
 }
-
 function renderSuggestion(data) {
     const suggestionContainer = document.getElementById('suggestion-container');
     if (!suggestionContainer) return;
