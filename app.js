@@ -3,6 +3,7 @@ let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 let currentLobbyCode = null;
 let lobbyInterval = null;
 let currentSuggestion = null;
+let isRefreshing = false; // CORRECCIÓN CRÍTICA: Variable global añadida
 
 // ---------- HELPERS DE UI ----------
 function showSpinner() { document.getElementById('global-spinner').style.display = 'block'; }
@@ -65,6 +66,7 @@ function showView(viewId) {
             lobbyInterval = null;
             currentLobbyCode = null;
             currentSuggestion = null;
+            isRefreshing = false;
         }
         const currentUrl = new URL(window.location);
         if (currentUrl.searchParams.has('join')) {
@@ -301,11 +303,11 @@ function copyInviteLink() {
 }
 
 async function refreshTeamBuilder() {
-    if (!currentLobbyCode || isRefreshing) return; // Evita solapamientos
+    if (!currentLobbyCode || isRefreshing) return;
 
     isRefreshing = true;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10s
+    const timeoutId = setTimeout(() => controller.abort(), 10000); 
 
     try {
         const res = await fetchAuth(`${API_URL}/Lobby/teambuilder/${currentLobbyCode}`, {
@@ -321,7 +323,6 @@ async function refreshTeamBuilder() {
         const data = await res.json();
         renderTeamBuilder(data);
 
-        // Cargar sugerencia solo si existe el endpoint; si falla no interrumpe
         await loadSuggestion().catch(err => console.warn('Sugerencia no disponible:', err));
 
     } catch (err) {
@@ -347,15 +348,16 @@ async function loadSuggestion() {
         currentSuggestion = data;
         renderSuggestion(data);
     } catch (e) {
-        // Silencioso: no queremos que un error en sugerencia rompa la vista principal
         console.warn('No se pudo obtener sugerencia:', e);
     }
 }
+
 function renderSuggestion(data) {
     const suggestionContainer = document.getElementById('suggestion-container');
     if (!suggestionContainer) return;
 
-    if (!data || data.length === 0) {
+    // CORRECCIÓN CRÍTICA: Validar estrictamente que sea un array
+    if (!data || !Array.isArray(data) || data.length === 0) {
         suggestionContainer.innerHTML = "<p>No hay suficientes datos para sugerir una combinación.</p>";
         return;
     }
