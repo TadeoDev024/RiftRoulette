@@ -60,9 +60,17 @@
                 <button class="btn-secondary" onclick="copyInviteLink()">Copiar Invitación</button>
             </div>
             <div id="team-results" class="team-results-container"></div>
+            <div id="suggestion-container" style="margin-top: 2rem;"></div>
         </div>
     </section>
 
     <script src="app.js"></script>
+    <!-- Spinner global -->
+<div id="global-spinner" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:9999;">
+    <div style="width:60px; height:60px; border:6px solid #333; border-top-color:#00cfd4; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+</div>
+<style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </body>
 </html>

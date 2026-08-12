@@ -16,7 +16,10 @@ namespace RiftRoulette
 
             builder.Services.AddControllers();
 
-            // CORS (puedes restringir más adelante)
+            // Registrar RiotDataService
+            builder.Services.AddScoped<RiotDataService>();
+
+            // CORS
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>
@@ -28,7 +31,7 @@ namespace RiftRoulette
                 });
             });
 
-            // Configurar autenticación JWT
+            // JWT
             var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") ?? "ESTA_ES_UNA_LLAVE_SUPER_SECRETA_Y_LARGA_12345";
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -53,11 +56,8 @@ namespace RiftRoulette
 
             app.UseRouting();
             app.UseCors("AllowAll");
-
-            // Autenticación y autorización
             app.UseAuthentication();
             app.UseAuthorization();
-
             app.MapControllers();
 
             app.Run();
