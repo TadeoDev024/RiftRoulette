@@ -14,7 +14,7 @@ namespace RiftRoulette.Services
         private readonly LobbyStateTracker _tracker;
         private readonly string _connectionString;
         private readonly ILogger<LobbyCleanupService> _logger;
-        private readonly int _timeoutSeconds = 15; // 15 seconds timeout
+        private readonly int _timeoutSeconds = 60; // 60 seconds timeout
 
         public LobbyCleanupService(LobbyStateTracker tracker, IConfiguration configuration, ILogger<LobbyCleanupService> logger)
         {

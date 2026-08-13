@@ -221,7 +221,10 @@ async function leaveLobby(code) {
 async function pingLobby() {
     if (!currentLobbyCode) return;
     try {
-        await fetchAuth(`${API_URL}/Lobby/ping`, { method: 'POST' });
+        await fetchAuth(`${API_URL}/Lobby/ping`, { 
+            method: 'POST',
+            body: JSON.stringify({}) // Prevenir error 400 por body vacío
+        });
     } catch (e) {
         console.error("Error en ping de sala:", e);
     }
@@ -229,8 +232,15 @@ async function pingLobby() {
 
 function returnToLobby() {
     if (!currentLobbyCode) return;
-    showView('view-lobby');
-    refreshTeamBuilder();
+    const code = currentLobbyCode;
+    // Evitar que el join haga un "leave" previo limpiando la variable temporalmente
+    currentLobbyCode = null; 
+    if (lobbyInterval) {
+        clearInterval(lobbyInterval);
+        lobbyInterval = null;
+    }
+    // Hacemos un Join seguro por si el servidor nos expulsó por inactividad
+    joinLobbyRequest(code);
 }
 
 async function leaveLobbyBtnClicked() {
