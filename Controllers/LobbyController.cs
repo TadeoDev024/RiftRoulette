@@ -5,6 +5,7 @@ using MySqlConnector;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace RiftRoulette.Controllers
@@ -15,11 +16,13 @@ namespace RiftRoulette.Controllers
     public class LobbyController : ControllerBase
     {
         private readonly string _connectionString;
+        private readonly RiftRoulette.Services.LobbyStateTracker _tracker;
 
-        public LobbyController(IConfiguration configuration)
+        public LobbyController(IConfiguration configuration, RiftRoulette.Services.LobbyStateTracker tracker)
         {
             _connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
                                 ?? configuration.GetConnectionString("DefaultConnection") ?? "";
+            _tracker = tracker;
         }
 
         [HttpPost("create")]
@@ -100,6 +103,7 @@ namespace RiftRoulette.Controllers
 
                 // Obtener lista actualizada de jugadores
                 var players = await GetPlayersByLobby(code, conn);
+                _tracker.UpdateLastSeen(player.UserId);
                 return Ok(new { lobbyCode = code, players = players });
             } 
             catch (Exception ex) 
@@ -108,11 +112,86 @@ namespace RiftRoulette.Controllers
             }
         }
 
+        [HttpPost("ping")]
+        public IActionResult PingLobby()
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdClaim, out int claimUserId))
+                {
+                    _tracker.UpdateLastSeen(claimUserId);
+                    return Ok(new { message = "Pong" });
+                }
+                return Unauthorized();
+            }
+            catch
+            {
+                return StatusCode(500);
+            }
+        }
+
+        [HttpPost("leave/{code}")]
+        public async Task<IActionResult> LeaveLobby(string code)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(userIdClaim, out int claimUserId))
+                    return Unauthorized();
+
+                code = code.ToUpper();
+
+                using var conn = new MySqlConnection(_connectionString);
+                await conn.OpenAsync();
+
+                // 1. Delete player from lobby
+                string deletePlayer = "DELETE FROM LobbyPlayers WHERE lobby_code = @code AND user_id = @uid";
+                using (var cmd = new MySqlCommand(deletePlayer, conn))
+                {
+                    cmd.Parameters.AddWithValue("@code", code);
+                    cmd.Parameters.AddWithValue("@uid", claimUserId);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                _tracker.RemoveUser(claimUserId);
+
+                // 2. Check if lobby is empty and delete it if it is
+                string checkEmpty = "SELECT COUNT(*) FROM LobbyPlayers WHERE lobby_code = @code";
+                using (var cmd = new MySqlCommand(checkEmpty, conn))
+                {
+                    cmd.Parameters.AddWithValue("@code", code);
+                    int remaining = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    if (remaining == 0)
+                    {
+                        string deleteLobby = "DELETE FROM Lobbies WHERE code = @code";
+                        using (var cmdLobby = new MySqlCommand(deleteLobby, conn))
+                        {
+                            cmdLobby.Parameters.AddWithValue("@code", code);
+                            await cmdLobby.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+
+                return Ok(new { message = "Has salido de la sala" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error al salir de la sala", error = ex.Message });
+            }
+        }
+
         [HttpGet("teambuilder/{code}")]
         public async Task<IActionResult> GetTeamBuilder(string code)
         {
             try 
             {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdClaim, out int claimUserId))
+                {
+                    _tracker.UpdateLastSeen(claimUserId);
+                }
+
                 code = code.ToUpper();
 
                 using var conn = new MySqlConnection(_connectionString);
@@ -237,6 +316,12 @@ namespace RiftRoulette.Controllers
         {
             try 
             {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdClaim, out int claimUserId))
+                {
+                    _tracker.UpdateLastSeen(claimUserId);
+                }
+
                 code = code.ToUpper();
 
                 using var conn = new MySqlConnection(_connectionString);

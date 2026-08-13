@@ -39,16 +39,18 @@ function showView(viewId) {
     const nav = document.getElementById('main-nav');
     nav.style.display = (viewId === 'view-auth' || !currentUser) ? 'none' : 'flex';
 
+    const returnBtn = document.getElementById('return-lobby-btn');
+    if (returnBtn) {
+        if (currentLobbyCode && viewId !== 'view-lobby') {
+            returnBtn.style.display = 'block';
+        } else {
+            returnBtn.style.display = 'none';
+        }
+    }
+
     if (viewId === 'view-inventory') loadInventory();
     
     if (viewId !== 'view-lobby') {
-        if (lobbyInterval) {
-            clearInterval(lobbyInterval);
-            lobbyInterval = null;
-            currentLobbyCode = null;
-            currentSuggestion = null;
-            isRefreshing = false;
-        }
         const currentUrl = new URL(window.location);
         if (currentUrl.searchParams.has('join')) {
             currentUrl.searchParams.delete('join');
@@ -112,7 +114,10 @@ async function handleAuth() {
     }
 }
 
-function logout() {
+async function logout() {
+    if (currentLobbyCode) {
+        await leaveLobby(currentLobbyCode);
+    }
     localStorage.clear();
     location.reload();
 }
@@ -204,6 +209,45 @@ async function toggleSkin(skinId, element) {
 }
 
 // ---------- SALAS ----------
+async function leaveLobby(code) {
+    if (!code) return;
+    try {
+        await fetchAuth(`${API_URL}/Lobby/leave/${code}`, { method: 'POST' });
+    } catch (e) {
+        console.error("Error al salir de la sala:", e);
+    }
+}
+
+async function pingLobby() {
+    if (!currentLobbyCode) return;
+    try {
+        await fetchAuth(`${API_URL}/Lobby/ping`, { method: 'POST' });
+    } catch (e) {
+        console.error("Error en ping de sala:", e);
+    }
+}
+
+function returnToLobby() {
+    if (!currentLobbyCode) return;
+    showView('view-lobby');
+    refreshTeamBuilder();
+}
+
+async function leaveLobbyBtnClicked() {
+    if (currentLobbyCode) {
+        await leaveLobby(currentLobbyCode);
+    }
+    currentLobbyCode = null;
+    if (lobbyInterval) {
+        clearInterval(lobbyInterval);
+        lobbyInterval = null;
+    }
+    currentSuggestion = null;
+    isRefreshing = false;
+    showView('view-home');
+    showToast("Has abandonado la sala");
+}
+
 async function createNewLobby() {
     showSpinner();
     try {
@@ -228,6 +272,13 @@ async function joinLobbyFromInput() {
 
 async function joinLobbyRequest(code) {
     if (!currentUser) return;
+
+    if (currentLobbyCode) {
+        await leaveLobby(currentLobbyCode);
+        currentLobbyCode = null;
+        if (lobbyInterval) clearInterval(lobbyInterval);
+    }
+
     showSpinner();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -250,9 +301,14 @@ async function joinLobbyRequest(code) {
             // Llamada inicial para cargar datos
             await refreshTeamBuilder();
             
-            // Configurar polling con intervalo fijo
+            // Configurar polling inteligente
             lobbyInterval = setInterval(() => {
-                refreshTeamBuilder();
+                const lobbyView = document.getElementById('view-lobby');
+                if (lobbyView && lobbyView.classList.contains('active')) {
+                    refreshTeamBuilder();
+                } else {
+                    pingLobby();
+                }
             }, 5000);
             
             showToast("Unido a la sala");

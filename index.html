@@ -18,6 +18,7 @@
         <ul class="nav-links">
             <li><a href="#" onclick="showView('view-home')">Inicio</a></li>
             <li><a href="#" onclick="showView('view-inventory')">Mis Skins</a></li>
+            <li><a href="#" id="return-lobby-btn" onclick="returnToLobby()" style="display: none; color: #ffcc00; font-weight: bold;">Volver a la Sala</a></li>
             <li><a href="#" onclick="logout()" class="logout-link">Cerrar Sesión</a></li>
         </ul>
     </nav>
@@ -62,7 +63,10 @@
         <div class="lobby-card">
             <div class="header-row" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>SALA: <span id="display-code" class="accent">#-----</span></h2>
-                <button class="btn-secondary" onclick="copyInviteLink()">Copiar Invitación</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-secondary" onclick="copyInviteLink()">Copiar Invitación</button>
+                    <button class="btn-secondary" style="background: rgba(255, 50, 50, 0.2); border-color: #ff3333; color: #ff3333;" onclick="leaveLobbyBtnClicked()">Abandonar Sala</button>
+                </div>
             </div>
             <div id="team-results" class="team-results-container"></div>
             <div id="suggestion-container" style="margin-top: 2rem;"></div>

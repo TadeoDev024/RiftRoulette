@@ -19,6 +19,10 @@ namespace RiftRoulette
             // Registrar RiotDataService
             builder.Services.AddScoped<RiotDataService>();
 
+            // Registrar Servicios de Sala
+            builder.Services.AddSingleton<RiftRoulette.Services.LobbyStateTracker>();
+            builder.Services.AddHostedService<RiftRoulette.Services.LobbyCleanupService>();
+
             // CORS
             builder.Services.AddCors(options =>
             {
