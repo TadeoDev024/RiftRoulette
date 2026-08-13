@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchMySkin | Team Builder</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Background Animated Orbs -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
     <nav class="navbar" id="main-nav" style="display: none;">
         <div class="nav-logo" onclick="showView('view-home')">MATCH<span>MYSKIN</span></div>
         <ul class="nav-links">
@@ -65,12 +70,14 @@
     </section>
 
     <script src="app.js"></script>
-    <!-- Spinner global -->
-<div id="global-spinner" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:9999;">
-    <div style="width:60px; height:60px; border:6px solid #333; border-top-color:#00cfd4; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
-</div>
-<style>
-    @keyframes spin { to { transform: rotate(360deg); } }
-</style>
+    <!-- Spinner global Premium -->
+    <div id="global-spinner" class="premium-spinner-container" style="display:none;">
+        <div class="premium-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring inner"></div>
+            <div class="spinner-core"></div>
+        </div>
+    </div>
+
 </body>
 </html>

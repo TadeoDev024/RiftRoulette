@@ -6,7 +6,7 @@ let currentSuggestion = null;
 let isRefreshing = false; // CORRECCIÓN CRÍTICA: Variable global añadida
 
 // ---------- HELPERS DE UI ----------
-function showSpinner() { document.getElementById('global-spinner').style.display = 'block'; }
+function showSpinner() { document.getElementById('global-spinner').style.display = 'flex'; }
 function hideSpinner() { document.getElementById('global-spinner').style.display = 'none'; }
 
 function showToast(message, type = 'info') {
@@ -17,26 +17,7 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// CSS para toasts (inyectado dinámicamente)
-const toastStyle = document.createElement('style');
-toastStyle.textContent = `
-    .toast {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #1a1a1c;
-        color: #f0f0f0;
-        padding: 12px 20px;
-        border-radius: 8px;
-        border-left: 4px solid #00cfd4;
-        z-index: 10000;
-        font-weight: 600;
-        animation: slideIn 0.3s ease;
-    }
-    .toast-error { border-left-color: #ff4a4a; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-`;
-document.head.appendChild(toastStyle);
+// CSS para toasts (ya incluido en style.css)
 
 // ---------- FETCH CON AUTH ----------
 function fetchAuth(url, options = {}) {
@@ -167,16 +148,16 @@ function renderInventory(skins) {
 
     const sortedChamps = Object.keys(grouped).sort();
 
-    container.innerHTML = sortedChamps.map(champ => `
-        <div class="theme-group">
+    container.innerHTML = sortedChamps.map((champ, groupIndex) => `
+        <div class="theme-group stagger-item" style="animation-delay: ${groupIndex * 0.1}s">
             <h3 class="theme-title">${champ}</h3>
             <div class="skins-row">
-                ${grouped[champ].map(s => {
+                ${grouped[champ].map((s, skinIndex) => {
                     const champId = s.campeonId || "Unknown";
-                    const skinIndex = parseInt(s.id) % 1000;
-                    const imgUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champId}_${skinIndex}.jpg`;
+                    const skinIdIndex = parseInt(s.id) % 1000;
+                    const imgUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champId}_${skinIdIndex}.jpg`;
                     return `
-                        <div class="skin-card ${s.owned ? 'owned' : ''}" onclick="toggleSkin('${s.id}', this)">
+                        <div class="skin-card stagger-item ${s.owned ? 'owned' : ''}" style="animation-delay: ${0.1 + (skinIndex * 0.05)}s" onclick="toggleSkin('${s.id}', this)">
                             <div class="skin-img-wrapper">
                                 <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/300x170?text=Error+Carga'">
                             </div>
@@ -367,9 +348,9 @@ function renderSuggestion(data) {
         <button class="btn-secondary" onclick="loadSuggestion()">Regenerar</button>
     </div><div class="suggestion-grid">`;
 
-    data.forEach(item => {
+    data.forEach((item, i) => {
         html += `
-            <div class="suggestion-card">
+            <div class="suggestion-card stagger-item" style="animation-delay: ${i * 0.1}s">
                 <strong>${item.rol}</strong>
                 <div>${item.campeon}</div>
                 <div class="skin-name-small">${item.skin}</div>
@@ -390,11 +371,11 @@ function renderTeamBuilder(data) {
     let html = "";
     for (const [tematica, lineas] of Object.entries(data)) {
         html += `<div class="team-group"><h4>${tematica}</h4><div class="roles-grid">`;
-        ["Top", "Jungle", "Mid", "ADC", "Support"].forEach(rol => {
-            html += `<div class="role-column"><div class="role-title">${rol}</div>`;
+        ["Top", "Jungle", "Mid", "ADC", "Support"].forEach((rol, i) => {
+            html += `<div class="role-column stagger-item" style="animation-delay: ${i * 0.1}s"><div class="role-title">${rol}</div>`;
             if (lineas[rol]?.length > 0) {
                 lineas[rol].forEach(op => {
-                    html += `<div class="role-option"><strong>${op.campeon}</strong><br>${op.skin}<br><small>👤 ${op.jugador}</small></div>`;
+                    html += `<div class="role-option"><strong>${op.campeon}</strong><br><span class="skin-name-small">${op.skin}</span><br><span class="player-name">👤 ${op.jugador}</span></div>`;
                 });
             } else html += `<div class="role-empty">-</div>`;
             html += `</div>`;
