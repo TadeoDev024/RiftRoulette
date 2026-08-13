@@ -311,15 +311,10 @@ async function joinLobbyRequest(code) {
             // Llamada inicial para cargar datos
             await refreshTeamBuilder();
             
-            // Configurar polling inteligente
+            // Configurar ping periódico (cada 2 minutos)
             lobbyInterval = setInterval(() => {
-                const lobbyView = document.getElementById('view-lobby');
-                if (lobbyView && lobbyView.classList.contains('active')) {
-                    refreshTeamBuilder();
-                } else {
-                    pingLobby();
-                }
-            }, 5000);
+                pingLobby();
+            }, 120000);
             
             showToast("Unido a la sala");
         } else {
