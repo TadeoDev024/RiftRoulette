@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using MySqlConnector;
 using RiftRoulette.Helpers;
 using System;
+using System.Security.Claims;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
