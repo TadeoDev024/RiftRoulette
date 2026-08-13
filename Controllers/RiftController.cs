@@ -135,7 +135,12 @@ namespace RiftRoulette.Controllers
         {
             try
             {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(userIdClaim, out int claimUserId)) return Unauthorized();
+
                 int uid = data.GetProperty("userId").GetInt32();
+                if (uid != claimUserId) return Unauthorized(new { message = "No autorizado" });
+                
                 string sid = data.GetProperty("skinId").GetString() ?? "";
                 bool owned = data.GetProperty("owned").GetBoolean();
 
