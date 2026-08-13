@@ -1,33 +1,107 @@
+/* ═══════════════════════════════════════════════════════════
+   RIFTROULETTE / MATCHMYSKIN — style.css
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── TOKENS DE DISEÑO ──────────────────────────────────── */
 :root {
-    --bg-deep: #050505;
-    --bg-card: #121214;
-    --accent: #00cfd4; /* Color Cyan neón */
-    --gold: #c89b3c;   /* Dorado Hextech */
-    --text-main: #f0f0f0;
-    --text-dim: #a0a0a0;
-    --border: rgba(255, 255, 255, 0.1);
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --bg-deep:       #05050a;
+    --bg-card:       #0f0f14;
+    --bg-card-2:     #16161e;
+    --bg-card-hover: #1c1c26;
+    --accent:        #00cfd4;
+    --accent-glow:   rgba(0, 207, 212, 0.25);
+    --accent-dim:    rgba(0, 207, 212, 0.08);
+    --gold:          #c89b3c;
+    --gold-glow:     rgba(200, 155, 60, 0.25);
+    --gold-dim:      rgba(200, 155, 60, 0.08);
+    --danger:        #ff4a4a;
+    --success:       #22c55e;
+    --text-main:     #e8e8f0;
+    --text-dim:      #7a7a9a;
+    --text-muted:    #4a4a6a;
+    --border:        rgba(255, 255, 255, 0.07);
+    --border-accent: rgba(0, 207, 212, 0.3);
+    --transition:    all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius-xl:     32px;
+    --radius-lg:     24px;
+    --radius-md:     16px;
+    --radius-sm:     12px;
+    --radius-xs:     8px;
 }
 
-* { margin: 0; padding: 0; box-box: border-box; }
+/* ── RESET ──────────────────────────────────────────────── */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ── BASE ───────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
 
 body {
     background-color: var(--bg-deep);
+    /* Patrón de puntos ultra sutil para romper el fondo plano */
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0);
+    background-size: 28px 28px;
     color: var(--text-main);
     font-family: 'Inter', sans-serif;
     line-height: 1.6;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* NAVBAR MINIMALISTA */
+/* ── VISIBILIDAD DE VISTAS (SPA) ────────────────────────── */
+.view { display: none !important; }
+
+.view.active { display: block !important; }
+
+#view-auth.active {
+    display: flex !important;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    /* Gradiente radial centrado para la pantalla de auth */
+    background: radial-gradient(ellipse 80% 60% at 50% 40%,
+                rgba(0, 207, 212, 0.06) 0%,
+                transparent 70%),
+                var(--bg-deep);
+    background-image:
+        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(0, 207, 212, 0.06) 0%, transparent 70%),
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0);
+    background-size: auto, 28px 28px;
+}
+
+/* ── FADE-IN ANIMATION ──────────────────────────────────── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+    50%       { box-shadow: 0 0 40px rgba(0, 207, 212, 0.45); }
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── NAVBAR ─────────────────────────────────────────────── */
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 5%;
-    background: rgba(18, 18, 20, 0.8);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
+    padding: 0.9rem 6%;
+    background: rgba(10, 10, 16, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    /* Línea inferior con gradiente en lugar de borde plano */
+    border-bottom: 1px solid transparent;
+    background-clip: padding-box;
+    box-shadow: 0 1px 0 0 rgba(0, 207, 212, 0.15), 0 4px 24px rgba(0, 0, 0, 0.4);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -35,534 +109,662 @@ body {
 
 .nav-logo {
     font-weight: 900;
-    font-size: 1.5rem;
-    letter-spacing: -1px;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
     text-transform: uppercase;
+    user-select: none;
+    cursor: pointer;
+    transition: var(--transition);
 }
-
+.nav-logo:hover { opacity: 0.85; }
 .nav-logo span { color: var(--accent); }
 
-.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links {
+    display: flex;
+    gap: 0.25rem;
+    list-style: none;
+    align-items: center;
+}
 .nav-links a {
     color: var(--text-dim);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 600;
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-xs);
     transition: var(--transition);
+    letter-spacing: 0.2px;
 }
-
-.nav-links a:hover { color: var(--accent); }
-
-/* CONTENEDORES */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 5%;
-}
-
-/* TARJETAS DE AUTH / HOME */
-.auth-card, .home-card {
-    background: var(--bg-card);
-    padding: 3rem;
-    border-radius: 24px;
-    border: 1px solid var(--border);
-    text-align: center;
-    max-width: 450px;
-    margin: 10vh auto;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-}
-
-input {
-    width: 100%;
-    background: #000;
-    border: 1px solid var(--border);
-    padding: 1rem;
-    border-radius: 12px;
-    color: white;
-    margin-bottom: 1rem;
-    outline: none;
-}
-
-input:focus { border-color: var(--accent); }
-
-.btn-main {
-    background: var(--accent);
-    color: black;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    width: 100%;
-    transition: var(--transition);
-}
-
-.btn-main:hover { transform: translateY(-2px); filter: brightness(1.2); }
-
-/* INVENTARIO PROFESIONAL */
-.theme-group { margin-bottom: 4rem; }
-
-.theme-title {
-    font-size: 1.8rem;
-    margin-bottom: 1.5rem;
-    color: var(--gold);
-    border-left: 4px solid var(--gold);
-    padding-left: 1rem;
-}
-
-.skins-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 20px;
-}
-
-.skin-card {
-    background: var(--bg-card);
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-}
-
-.skin-card:hover { border-color: var(--accent); transform: scale(1.03); }
-
-/* --- ESTADO ADQUIRIDO (OWNED) --- */
-.skin-card.owned { 
-    border-color: var(--gold); 
-}
-
-.skin-card.owned::after {
-    content: 'OWNED'; /* Cambiado a inglés */
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: var(--gold);
-    color: black;
-    font-size: 0.7rem;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-}
-
-/* --- LÓGICA DE BLANCO Y NEGRO / COLOR --- */
-.skin-img-wrapper {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background-color: #000; /* Fondo negro por si la imagen tarda en cargar */
-}
-
-.skin-img-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    /* POR DEFECTO: Blanco y negro (100%) y un poco oscurecido (0.5) */
-    filter: grayscale(100%) brightness(0.5); 
-    transition: var(--transition);
-}
-
-/* Al pasar el mouse por encima (Hover), recupera el color para invitar a dar clic */
-.skin-card:hover img { 
-    filter: grayscale(0%) brightness(1); 
-    transform: scale(1.05); /* Pequeño zoom 3D */
-}
-
-/* Cuando le das clic y es tuya (OWNED), se queda a todo color de forma permanente */
-.skin-card.owned img { 
-    filter: grayscale(0%) brightness(1); 
-}
-
-.skin-name {
-    padding: 1rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-align: center;
-}
-/* --- ESTILOS DEL TEAM BUILDER --- */
-.lobby-card {
-    background: var(--bg-card);
-    padding: 3rem;
-    border-radius: 24px;
-    border: 1px solid var(--border);
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.btn-secondary {
-    background: transparent;
-    color: var(--text-main);
-    border: 1px solid var(--border);
-    padding: 0.8rem 1.5rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-
-.tb-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
-.tb-header h3 { color: var(--accent); font-size: 1.5rem; }
-
-.team-group {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.team-group h4 {
-    color: var(--gold);
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.roles-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5 columnas exactas para Top, Jg, Mid, Adc, Sup */
-    gap: 15px;
-}
-
-@media (max-width: 900px) {
-    .roles-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-}
-
-.role-column {
-    background: var(--bg-card);
-    border: 1px solid #222;
-    border-radius: 12px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.role-title {
-    text-align: center;
-    font-size: 0.8rem;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    font-weight: 900;
-    letter-spacing: 1px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #333;
-}
-
-.role-option {
-    background: rgba(0, 207, 212, 0.05);
-    border-left: 3px solid var(--accent);
-    padding: 10px;
-    border-radius: 8px;
-}
-
-.role-option strong { display: block; color: #fff; font-size: 0.95rem; }
-.role-option .skin-name-small { color: var(--text-dim); font-size: 0.75rem; display: block; margin-bottom: 5px; }
-.role-option .player-name { color: var(--gold); font-size: 0.8rem; font-weight: 600; }
-
-.role-empty {
-    text-align: center;
-    color: #444;
-    font-size: 0.85rem;
-    font-style: italic;
-    padding: 20px 0;
-}
-/* --- ESTILOS DEL TEAM BUILDER --- */
-.lobby-card {
-    background: var(--bg-card);
-    padding: 3rem;
-    border-radius: 24px;
-    border: 1px solid var(--border);
-    max-width: 1100px;
-    margin: 0 auto;
-}
-
-.btn-secondary {
-    background: transparent;
-    color: var(--text-main);
-    border: 1px solid var(--border);
-    padding: 0.8rem 1.5rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-
-.tb-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
-.tb-header h3 { color: var(--accent); font-size: 1.5rem; }
-
-.team-group {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.team-group h4 {
-    color: var(--gold);
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-align: center;
-}
-
-.roles-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5 columnas para los 5 roles */
-    gap: 15px;
-}
-
-@media (max-width: 900px) {
-    .roles-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-}
-
-.role-column {
-    background: var(--bg-deep);
-    border: 1px solid #222;
-    border-radius: 12px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.role-title {
-    text-align: center;
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    font-weight: 900;
-    letter-spacing: 1px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #333;
-}
-
-.role-option {
-    background: rgba(0, 207, 212, 0.05);
-    border-left: 3px solid var(--accent);
-    padding: 10px;
-    border-radius: 8px;
-    transition: var(--transition);
-}
-.role-option:hover { transform: translateY(-2px); border-color: var(--gold); }
-
-.role-option strong { display: block; color: #fff; font-size: 1rem; }
-.role-option .skin-name-small { color: var(--text-dim); font-size: 0.75rem; display: block; margin-bottom: 5px; }
-.role-option .player-name { color: var(--gold); font-size: 0.8rem; font-weight: 600; display: block; margin-top: 5px; }
-
-.role-empty {
-    text-align: center;
-    color: #444;
-    font-size: 0.85rem;
-    font-style: italic;
-    padding: 20px 0;
-}
-.btn-switch {
-    background: transparent;
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    /* AUMENTAMOS EL MARGEN SUPERIOR AQUÍ */
-    margin-top: 2.5rem; 
-    width: 100%;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: var(--transition);
-}
-
-.btn-switch:hover {
+.nav-links a:hover {
     color: var(--accent);
-    border-color: var(--accent);
-    background: rgba(0, 207, 212, 0.05);
+    background: var(--accent-dim);
 }
-
-/* Botón de Cerrar Sesión en rojo */
 .nav-links .logout-link {
-    color: #ff4a4a;
+    color: var(--danger);
+    border: 1px solid transparent;
 }
-
 .nav-links .logout-link:hover {
     color: #ff6b6b;
-    text-shadow: 0 0 10px rgba(255, 74, 74, 0.4);
-}
-/* Separar el botón de Crear Nuevo Equipo del texto */
-.home-card .btn-main {
-    margin-top: 2rem; /* Puedes subir este número a 2.5rem o 3rem si lo quieres más abajo */
-}
-/* Esto es lo que hace que las páginas se escondan */
-.view {
-    display: none; 
+    background: rgba(255, 74, 74, 0.08);
+    border-color: rgba(255, 74, 74, 0.2);
 }
 
-/* Esto es lo que hace que solo la página activa se muestre */
-.view.active {
-    display: block !important;
-}
-
-/* Aseguramos que el contenedor no rompa el diseño */
+/* ── CONTENEDOR GENERAL ─────────────────────────────────── */
 .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-}
-/* --- LÓGICA DE VISIBILIDAD --- */
-.view { display: none; }
-.view.active { display: block; }
-
-#view-auth.active {
-    display: flex !important;
-    min-height: 100vh;
-    align-items: center;
-    justify-content: center;
+    padding: 2.5rem 5%;
 }
 
-/* --- BUSCADOR --- */
-#skin-search {
+/* ── INPUTS GLOBALES ────────────────────────────────────── */
+input, input[type="search"], input[type="text"], input[type="password"] {
     width: 100%;
-    max-width: 500px;
-    background: var(--bg-card);
-    border: 1px solid var(--accent);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 10px;
-    margin: 20px 0;
-    font-family: inherit;
-}
-
-/* --- BOTONES Y ESPACIADO --- */
-.home-card .btn-main {
-    margin-top: 2.5rem;
-}
-
-.btn-switch {
-    margin-top: 2.5rem;
-    background: transparent;
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border);
-    color: var(--text-dim);
-    padding: 10px;
-    cursor: pointer;
-    width: 100%;
-}
-
-/* Mantener estilos de cartas y colores previos aquí... */
-/* --- LÓGICA DE VISIBILIDAD (REEMPLAZA LO ANTERIOR) --- */
-.view { 
-    display: none !important; 
-}
-
-.view.active { 
-    display: block !important; 
-}
-
-/* CENTRADO DEL LOGIN */
-#view-auth.active {
-    display: flex !important;
-    min-height: 100vh;
-    align-items: center;
-    justify-content: center;
-}
-
-.auth-card {
-    width: 100%;
-    max-width: 400px;
-    margin: 0;
-}
-
-/* BUSCADOR */
-#skin-search {
-    width: 100%;
-    max-width: 500px;
-    background: #1a1a1c;
-    border: 1px solid var(--accent);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 12px;
-    margin: 20px 0;
+    padding: 0.9rem 1rem;
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+    margin-bottom: 0.85rem;
     outline: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+input::placeholder { color: var(--text-muted); }
 
-#skin-search:focus {
-    box-shadow: 0 0 10px rgba(0, 207, 212, 0.4);
-}
-
-/* ESPACIADOS DE BOTONES */
-.home-card .btn-main { margin-top: 2.5rem; }
-.btn-switch { margin-top: 2.5rem; cursor: pointer; background: none; border: 1px solid #333; color: #aaa; padding: 10px; width: 100%; }
-.view { 
-    display: none !important; 
-}
-.view.active { 
-    display: block !important; 
-}
-
-/* --- CENTRADO TOTAL DEL LOGIN --- */
-#view-auth.active {
-    display: flex !important;
-    min-height: 100vh;
-    align-items: center;
-    justify-content: center;
-    background-color: #000; /* Fondo negro como en tu imagen */
-}
-
-.auth-card {
-    width: 100%;
-    max-width: 400px;
-    background-color: #1a1a1c;
-    padding: 2.5rem;
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Centra horizontalmente todo el contenido */
-    text-align: center;
-}
-
-.auth-inputs {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 15px; /* Espacio entre inputs y botón */
-    align-items: center;
-}
-
-.auth-inputs input {
-    width: 100%;
-    padding: 12px;
-    background: #000;
-    border: 1px solid #333;
-    color: white;
-    border-radius: 8px;
-    text-align: center; /* Centra el texto que escribes */
-}
-
+/* ── BOTONES ─────────────────────────────────────────────── */
 .btn-main {
-    width: 100%;
-    background-color: #00cfd4; /* Color cyan neón */
+    background: linear-gradient(135deg, #00cfd4 0%, #00a8ad 100%);
     color: #000;
     border: none;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: bold;
+    padding: 0.9rem 2rem;
+    border-radius: var(--radius-sm);
+    font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.4px;
     cursor: pointer;
-    transition: 0.3s;
+    width: 100%;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+.btn-main::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+    pointer-events: none;
+}
+.btn-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 207, 212, 0.45);
+}
+.btn-main:active { transform: translateY(0); }
+
+.btn-main.large {
+    padding: 1rem 2.5rem;
+    width: auto;
+    font-size: 0.95rem;
+    letter-spacing: 1px;
 }
 
-.btn-main:hover {
-    box-shadow: 0 0 15px rgba(0, 207, 212, 0.6);
+.btn-secondary {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
 }
 
 .btn-switch {
     margin-top: 1.5rem;
     background: transparent;
     border: none;
-    color: #aaa;
+    color: var(--text-dim);
     cursor: pointer;
-    text-decoration: underline;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    width: 100%;
+    transition: var(--transition);
+    padding: 0.5rem;
+}
+.btn-switch:hover { color: var(--accent); }
+
+/* ────────────────────────────────────────────────────────────
+   VISTA AUTH
+   ─────────────────────────────────────────────────────────── */
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--bg-card-2);
+    padding: 2.75rem 2.5rem 2rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(0, 207, 212, 0.15);
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 24px 60px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(0, 207, 212, 0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: fadeInUp 0.5s ease both;
+}
+
+/* Logo dentro del auth */
+.auth-card::before {
+    content: 'MATCH MYSKIN';
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 1.75rem;
+    opacity: 0.8;
+}
+
+.auth-card h2 {
+    font-size: 1.75rem;
+    font-weight: 900;
+    margin-bottom: 1.75rem;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 40%, var(--text-dim) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.auth-inputs {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.auth-inputs input {
+    text-align: center;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.auth-inputs input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ────────────────────────────────────────────────────────────
+   VISTA HOME
+   ─────────────────────────────────────────────────────────── */
+.home-card {
+    background: var(--bg-card);
+    padding: 3.5rem 3rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    text-align: center;
+    max-width: 560px;
+    margin: 8vh auto;
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 24px 60px rgba(0, 0, 0, 0.5);
+    animation: fadeInUp 0.4s ease both;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Decoración de fondo sutil en la home card */
+.home-card::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 200px;
+    background: radial-gradient(ellipse, rgba(0,207,212,0.07) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.home-card h1 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin-bottom: 0.6rem;
+    background: linear-gradient(135deg, #ffffff 0%, #b0b0c0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.home-card p {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+.lobby-actions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+/* Separador "o" entre crear y unirse */
+.lobby-actions-container .divider {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    position: relative;
+    width: 100%;
+    text-align: center;
+}
+.lobby-actions-container .divider::before,
+.lobby-actions-container .divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 38%;
+    height: 1px;
+    background: var(--border);
+}
+.lobby-actions-container .divider::before { left: 0; }
+.lobby-actions-container .divider::after  { right: 0; }
+
+.join-lobby-box {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+.join-lobby-box input {
+    flex: 1;
+    margin-bottom: 0;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* ────────────────────────────────────────────────────────────
+   VISTA INVENTARIO
+   ─────────────────────────────────────────────────────────── */
+.inventory-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+.inventory-header h2 {
+    font-size: 1.9rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+}
+
+#skin-search {
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 0;
+    background: var(--bg-card-2);
+    border: 1px solid var(--border-accent);
+}
+#skin-search:focus {
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ── GRUPOS Y GRILLA DE SKINS ───────────────────────────── */
+.theme-group {
+    margin-bottom: 4rem;
+    animation: fadeInUp 0.4s ease both;
+}
+
+.theme-title {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    color: var(--gold);
+    border-left: 3px solid var(--gold);
+    padding-left: 1rem;
+    letter-spacing: 0.5px;
+    font-weight: 800;
+}
+
+.skins-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+/* ── SKIN CARDS ──────────────────────────────────────────── */
+.skin-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+}
+.skin-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--accent-glow);
+}
+
+/* OWNED state */
+.skin-card.owned {
+    border-color: var(--gold);
+    box-shadow: 0 4px 20px var(--gold-glow);
+}
+.skin-card.owned::after {
+    content: '✓ OWNED';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, var(--gold) 0%, #e8b84b 100%);
+    color: #000;
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+/* Imagen — blanco y negro por defecto */
+.skin-img-wrapper {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background-color: #000;
+}
+.skin-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(100%) brightness(0.45);
+    transition: filter 0.3s ease, transform 0.3s ease;
+}
+.skin-card:hover img {
+    filter: grayscale(0%) brightness(1.05);
+    transform: scale(1.06);
+}
+.skin-card.owned img {
+    filter: grayscale(0%) brightness(1);
+}
+
+.skin-name {
+    padding: 0.85rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.4;
+}
+.skin-name small {
+    color: var(--text-dim);
+    font-weight: 400;
+    font-size: 0.75rem;
+}
+
+/* ── LOADING STATE PARA INVENTARIO ──────────────────────── */
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 4rem 0;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+.loading-spinner::before {
+    content: '';
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* ────────────────────────────────────────────────────────────
+   VISTA LOBBY / TEAM BUILDER
+   ─────────────────────────────────────────────────────────── */
+.lobby-card {
+    background: var(--bg-card);
+    padding: 2.5rem 3rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    max-width: 1100px;
+    margin: 0 auto;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 24px 60px rgba(0,0,0,0.4);
+    animation: fadeInUp 0.4s ease both;
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+.header-row h2 {
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.accent { color: var(--accent); }
+
+.team-results-container { width: 100%; }
+
+.team-group {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.75rem;
+    margin-bottom: 2rem;
+    transition: border-color 0.2s ease;
+}
+.team-group:hover { border-color: rgba(200, 155, 60, 0.2); }
+
+.team-group h4 {
+    font-size: 1.1rem;
+    font-weight: 900;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+    /* Gradiente dorado en el texto del título de temática */
+    background: linear-gradient(135deg, var(--gold) 0%, #e8c472 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.roles-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+@media (max-width: 900px) {
+    .roles-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+}
+
+.role-column {
+    background: var(--bg-card-2);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.role-title {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.role-option {
+    background: rgba(0, 207, 212, 0.04);
+    border: 1px solid rgba(0, 207, 212, 0.12);
+    border-left: 3px solid var(--accent);
+    padding: 10px;
+    border-radius: var(--radius-xs);
+    transition: var(--transition);
+}
+.role-option:hover {
+    transform: translateY(-2px);
+    background: rgba(0, 207, 212, 0.08);
+    border-color: rgba(0, 207, 212, 0.3);
+    border-left-color: var(--gold);
+}
+.role-option strong {
+    display: block;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.skin-name-small {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    display: block;
+    margin-bottom: 4px;
+}
+.player-name {
+    color: var(--gold);
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: block;
+    margin-top: 4px;
+}
+
+.role-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
+    padding: 16px 0;
+}
+
+/* Estado "esperando" en el team builder */
+#team-results p {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 3rem;
+    font-size: 0.95rem;
+}
+
+/* ────────────────────────────────────────────────────────────
+   SISTEMA DE TOASTS
+   ─────────────────────────────────────────────────────────── */
+#toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card-2);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.03);
+    font-size: 0.88rem;
+    font-weight: 500;
+    min-width: 260px;
+    max-width: 380px;
+    opacity: 0;
+    transform: translateX(24px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.toast.toast-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-success { border-left: 3px solid var(--success); }
+.toast-error   { border-left: 3px solid var(--danger);  }
+.toast-info    { border-left: 3px solid var(--accent);  }
+
+.toast-icon { font-size: 0.9rem; font-weight: 900; flex-shrink: 0; }
+.toast-success .toast-icon { color: var(--success); }
+.toast-error   .toast-icon { color: var(--danger);  }
+.toast-info    .toast-icon { color: var(--accent);  }
+.toast-message { color: var(--text-main); line-height: 1.4; }
+
+/* ── RESPONSIVO ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .container { padding: 1.5rem 4%; }
+
+    .home-card, .auth-card {
+        padding: 2rem 1.5rem;
+        margin: 4vh auto;
+    }
+    .home-card h1 { font-size: 1.7rem; }
+
+    .lobby-card { padding: 1.5rem; }
+
+    .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .inventory-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    #skin-search { max-width: 100%; }
+
+    .join-lobby-box { flex-direction: column; }
+
+    .nav-links { gap: 0; }
+    .nav-links a { padding: 0.4rem 0.6rem; font-size: 0.82rem; }
+
+    #toast-container {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+    }
+    .toast { max-width: 100%; min-width: unset; }
+}
+
+@media (max-width: 480px) {
+    .navbar { padding: 0.75rem 4%; }
+    .nav-logo { font-size: 1.15rem; }
+    .skins-row { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); }
 }

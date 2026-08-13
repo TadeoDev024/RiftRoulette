@@ -1,0 +1,17 @@
+## .NET Build artifacts
+bin/
+obj/
+
+## User secrets & local settings
+appsettings.Development.json
+*.user
+*.suo
+.vs/
+
+## IDE
+.idea/
+.vscode/
+
+## OS
+.DS_Store
+Thumbs.db
